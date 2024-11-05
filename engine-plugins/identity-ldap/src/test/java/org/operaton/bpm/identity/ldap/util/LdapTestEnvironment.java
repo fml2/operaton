@@ -16,15 +16,6 @@
  */
 package org.operaton.bpm.identity.ldap.util;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.directory.api.ldap.model.entry.Entry;
 import org.apache.directory.api.ldap.model.name.Dn;
@@ -37,7 +28,6 @@ import org.apache.directory.api.ldap.schema.manager.impl.DefaultSchemaManager;
 import org.apache.directory.api.util.exception.Exceptions;
 import org.apache.directory.server.constants.ServerDNConstants;
 import org.apache.directory.server.core.DefaultDirectoryService;
-import org.apache.directory.server.core.api.CacheService;
 import org.apache.directory.server.core.api.DirectoryService;
 import org.apache.directory.server.core.api.DnFactory;
 import org.apache.directory.server.core.api.InstanceLayout;
@@ -53,6 +43,15 @@ import org.apache.directory.server.xdbm.Index;
 import org.operaton.bpm.engine.impl.util.IoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
 
 /**
  * <p>
@@ -104,6 +103,11 @@ public class LdapTestEnvironment {
     SchemaLoader loader = new LdifSchemaLoader(schemaPartitionDirectory);
     SchemaManager schemaManager = new DefaultSchemaManager(loader);
 
+    if (!schemaManager.isEnabled("core") || !schemaManager.isEnabled("system")) {
+      schemaManager.enable("core");
+      schemaManager.enable("system");
+      schemaManager.loadAllEnabled();
+    }
     // We have to load the schema now, otherwise we won't be able
     // to initialize the Partitions, as we won't be able to parse
     // and normalize their suffix Dn
@@ -141,9 +145,12 @@ public class LdapTestEnvironment {
     InstanceLayout il = new InstanceLayout(workingDirectory);
     service.setInstanceLayout(il);
 
+    /*
     CacheService cacheService = new CacheService();
     cacheService.initialize(service.getInstanceLayout());
     service.setCacheService(cacheService);
+
+     */
 
     initSchemaPartition();
 

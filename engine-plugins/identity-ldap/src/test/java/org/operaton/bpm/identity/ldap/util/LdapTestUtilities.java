@@ -19,9 +19,9 @@ package org.operaton.bpm.identity.ldap.util;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertNotSame;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.operaton.bpm.engine.IdentityService;
 import org.operaton.bpm.engine.identity.Group;
 import org.operaton.bpm.engine.identity.User;

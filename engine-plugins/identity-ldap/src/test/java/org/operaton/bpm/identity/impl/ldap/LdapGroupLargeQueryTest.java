@@ -16,40 +16,32 @@
  */
 package org.operaton.bpm.identity.impl.ldap;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.List;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.operaton.bpm.engine.IdentityService;
 import org.operaton.bpm.engine.identity.Group;
 import org.operaton.bpm.engine.identity.GroupQuery;
-import org.operaton.bpm.engine.test.ProcessEngineRule;
+import org.operaton.bpm.engine.test.junit5.ProcessEngineExtension;
 import org.operaton.bpm.identity.ldap.util.LdapTestEnvironment;
-import org.operaton.bpm.identity.ldap.util.LdapTestEnvironmentRule;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.operaton.bpm.identity.ldap.util.LdapTestEnvironmentExtension;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class LdapGroupLargeQueryTest {
 
-  @ClassRule
-  public static LdapTestEnvironmentRule ldapRule = new LdapTestEnvironmentRule().additionalNumberOfUsers(5).additionnalNumberOfGroups(5).additionalNumberOfRoles(80); // the TestEnvironment creates groups for roles. Attention, stay under 80, there is a limitation in the query on 100
+  @RegisterExtension
+  static LdapTestEnvironmentExtension ldapExtension = new LdapTestEnvironmentExtension().additionalNumberOfUsers(5).additionnalNumberOfGroups(5).additionalNumberOfRoles(80); // the TestEnvironment creates groups for roles. Attention, stay under 80, there is a limitation in the query on 100
 
-  @Rule
-  public ProcessEngineRule engineRule = new ProcessEngineRule("operaton.ldap.pages.cfg.xml"); // pageSize = 3 in this configuration
+  @RegisterExtension
+  static ProcessEngineExtension engineExtension = new ProcessEngineExtension().configurationResource("operaton.ldap.pages.cfg.xml"); // pageSize = 3 in this configuration
 
   IdentityService identityService;
   LdapTestEnvironment ldapTestEnvironment;
 
-  @Before
-  public void setup() {
-    identityService = engineRule.getIdentityService();
-    ldapTestEnvironment = ldapRule.getLdapTestEnvironment();
-  }
-
   @Test
-  public void testAllGroupsQuery() {
+  void allGroupsQuery() {
     List<Group> listGroups = identityService.createGroupQuery().list();
 
     // In this group, we expect more than a page size
@@ -59,7 +51,7 @@ public class LdapGroupLargeQueryTest {
   }
 
   @Test
-  public void testPagesAllGroupsQuery() {
+  void pagesAllGroupsQuery() {
     List<Group> listGroups = identityService.createGroupQuery().list();
 
     assertThat(listGroups).hasSize(ldapTestEnvironment.getTotalNumberOfRolesCreated());
@@ -78,7 +70,7 @@ public class LdapGroupLargeQueryTest {
   }
 
   @Test
-  public void testQueryPaging() {
+  void queryPaging() {
     GroupQuery query = identityService.createGroupQuery();
 
     assertThat(query.listPage(0, Integer.MAX_VALUE)).hasSize(86);

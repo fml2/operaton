@@ -409,21 +409,20 @@ public class LdapIdentityProviderSession implements ReadOnlyIdentityProvider {
           E entity = transformEntity.apply(result);
 
           String id = entity.getId();
-          if (id == null) {
-            LdapPluginLogger.INSTANCE.invalidLdapEntityReturned(entity, result);
-          } else {
-            if (resultCountPredicate.test(id)) {
-              if (resultCount >= firstResult || ignorePagination) {
-                if (LdapPluginLogger.INSTANCE.isDebugEnabled()) {
-                  resultLogger.append(entity);
-                  resultLogger.append(" based on ");
-                  resultLogger.append(result);
-                  resultLogger.append(", ");
-                }
-                entities.add((T) entity);
+          if (id != null && resultCountPredicate.test(id)) {
+            if (resultCount >= firstResult || ignorePagination) {
+              if (LdapPluginLogger.INSTANCE.isDebugEnabled()) {
+                resultLogger.append(entity);
+                resultLogger.append(" based on ");
+                resultLogger.append(result);
+                resultLogger.append(", ");
               }
-              resultCount++;
+              entities.add((T) entity);
             }
+            resultCount++;
+          } else {
+            LdapPluginLogger.INSTANCE.invalidLdapEntityReturned(entity, result);
+
           }
         }
       }

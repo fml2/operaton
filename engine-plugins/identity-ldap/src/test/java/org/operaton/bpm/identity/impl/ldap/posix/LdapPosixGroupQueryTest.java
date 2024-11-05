@@ -16,40 +16,38 @@
  */
 package org.operaton.bpm.identity.impl.ldap.posix;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.List;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.operaton.bpm.engine.IdentityService;
 import org.operaton.bpm.engine.identity.Group;
 import org.operaton.bpm.engine.identity.User;
-import org.operaton.bpm.engine.test.ProcessEngineRule;
+import org.operaton.bpm.engine.test.junit5.ProcessEngineExtension;
 import org.operaton.bpm.identity.ldap.util.LdapTestEnvironment;
-import org.operaton.bpm.identity.ldap.util.LdapTestEnvironmentRule;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.operaton.bpm.identity.ldap.util.LdapTestEnvironmentExtension;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 
 public class LdapPosixGroupQueryTest {
 
-  @ClassRule
-  public static LdapTestEnvironmentRule ldapRule = new LdapTestEnvironmentRule().posix(true);
-  @Rule
-  public ProcessEngineRule engineRule = new ProcessEngineRule("posix.operaton.cfg.xml");
+  @RegisterExtension
+  static LdapTestEnvironmentExtension ldapExtension = new LdapTestEnvironmentExtension().posix(true);
+  @RegisterExtension
+  static ProcessEngineExtension engineExtension = new ProcessEngineExtension().configurationResource("posix.operaton.cfg.xml");
 
   IdentityService identityService;
   LdapTestEnvironment ldapTestEnvironment;
 
-  @Before
-  public void setup() {
-    identityService = engineRule.getIdentityService();
-    ldapTestEnvironment = ldapRule.getLdapTestEnvironment();
+  @BeforeEach
+  void setup() {
+    ldapTestEnvironment = ldapExtension.getLdapTestEnvironment();
   }
 
   @Test
-  public void shouldFindGroupFilterByGroupIdWithoutMembers() {
+  void shouldFindGroupFilterByGroupIdWithoutMembers() {
     // given
 
     // when
@@ -61,7 +59,7 @@ public class LdapPosixGroupQueryTest {
   }
 
   @Test
-  public void shouldFindGroupFilterByGroupIdWithMembers() {
+  void shouldFindGroupFilterByGroupIdWithMembers() {
     // given
 
     // when
@@ -73,7 +71,7 @@ public class LdapPosixGroupQueryTest {
   }
 
   @Test
-  public void shouldFindUserFilterByMemberOfGroupWithoutMember() {
+  void shouldFindUserFilterByMemberOfGroupWithoutMember() {
     // given
 
     // when
@@ -84,7 +82,7 @@ public class LdapPosixGroupQueryTest {
   }
 
   @Test
-  public void shouldFindUserFilterByMemberOfGroupWithMember() {
+  void shouldFindUserFilterByMemberOfGroupWithMember() {
     // given
 
     // when
