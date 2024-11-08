@@ -16,6 +16,7 @@
     <ldap.server.port>10389</ldap.server.port>
     <ldap.server.port.posix>5027</ldap.server.port.posix>
     <surefire.forkCount>1</surefire.forkCount>
+    <version.apacheds>2.0.0.AM27</version.apacheds>
   </properties>
 
   <dependencies>
@@ -25,17 +26,20 @@
     </dependency>
 
     <!-- LDAP Libraries to start test server -->
+
     <dependency>
       <groupId>org.apache.directory.server</groupId>
-      <artifactId>apacheds-all</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.directory.shared</groupId>
-          <artifactId>shared-ldap</artifactId>
-        </exclusion>
-      </exclusions>
+      <artifactId>apacheds-protocol-ldap</artifactId>
+      <version>${version.apacheds}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.directory.server</groupId>
+      <artifactId>apacheds-ldif-partition</artifactId>
+      <version>${version.apacheds}</version>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
@@ -75,6 +79,7 @@
           <failIfNoTests>false</failIfNoTests>
           <trimStackTrace>false</trimStackTrace>
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
+          <forkCount>0</forkCount>
         </configuration>
       </plugin>
     </plugins>
