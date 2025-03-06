@@ -24,6 +24,7 @@ import org.testcontainers.utility.DockerImageName;
 public class OperatonMSSQLContainerProvider extends MSSQLServerContainerProvider {
 
   private static final String NAME = "operatonsqlserver";
+  private static final String INIT_SQL_SERVER_SQL = "initSqlServer.sql";
 
   @Override
   public boolean supports(String databaseType) {
@@ -34,6 +35,6 @@ public class OperatonMSSQLContainerProvider extends MSSQLServerContainerProvider
   public JdbcDatabaseContainer newInstance(String tag) {
     DockerImageName dockerImageName = TestcontainersHelper
       .resolveDockerImageName("mssql", tag, "mcr.microsoft.com/mssql/server");
-    return new MSSQLServerContainer(dockerImageName).acceptLicense();
+    return new MSSQLServerContainer(dockerImageName).acceptLicense().withInitScript(INIT_SQL_SERVER_SQL);
   }
 }
