@@ -237,7 +237,7 @@
         <database.datasource.class>org.mariadb.jdbc.MySQLDataSource</database.datasource.class>
         <database.tc.url>operatonmariadb:10.6</database.tc.url>
         <database.tc.params>/${database.name}?user=${database.username}&amp;amp;password=${database.password}</database.tc.params>
-        <database.url>jdbc:tc:${database.tc.url}://localhost:${database.port}${database.tc.params}</database.url>
+        <database.url>jdbc:tc:${database.tc.url}://${database.tc.params}</database.url>
       </properties>
 
       <dependencies>
@@ -274,7 +274,7 @@
         <database.datasource.class>com.mysql.cj.jdbc.MysqlDataSource</database.datasource.class>
         <database.tc.url>operatonmysql:8.0</database.tc.url>
         <database.tc.params>/${database.name}?sendFractionalSeconds=false&amp;amp;user=${database.username}&amp;amp;password=${database.password}</database.tc.params>
-        <database.url>jdbc:tc:${database.tc.url}://localhost:${database.port}${database.tc.params}</database.url>
+        <database.url>jdbc:tc:${database.tc.url}://${database.tc.params}</database.url>
       </properties>
 
       <dependencies>
@@ -310,7 +310,7 @@
         <database.driver>oracle.jdbc.OracleDriver</database.driver>
         <database.datasource.class>oracle.jdbc.pool.OracleDataSource</database.datasource.class>
         <database.tc.url>operatonoracle:21-faststart</database.tc.url>
-        <database.url>jdbc:tc:${database.tc.url}://localhost:${database.port}${database.tc.params}</database.url>
+        <database.url>jdbc:tc:${database.tc.url}://${database.tc.params}</database.url>
       </properties>
       <dependencies>
         <dependency>
@@ -392,8 +392,7 @@
         <database.driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</database.driver>
         <database.datasource.class>com.microsoft.sqlserver.jdbc.SQLServerDataSource</database.datasource.class>
         <database.tc.url>operatonsqlserver:2022-latest</database.tc.url>
-        <database.tc.params>;DatabaseName=${database.name};user=${database.username};password=${database.password};</database.tc.params>
-        <database.url>jdbc:tc:${database.tc.url}://localhost:${database.port}${database.tc.params}</database.url>
+        <database.url>jdbc:tc:${database.tc.url}://${database.tc.params}</database.url>
       </properties>
 
       <dependencies>
