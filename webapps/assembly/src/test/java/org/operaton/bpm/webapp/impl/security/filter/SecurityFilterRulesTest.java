@@ -16,7 +16,18 @@
  */
 package org.operaton.bpm.webapp.impl.security.filter;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
+import org.operaton.bpm.cockpit.Cockpit;
+import org.operaton.bpm.cockpit.impl.DefaultCockpitRuntimeDelegate;
+import org.operaton.bpm.engine.ProcessEngine;
+import org.operaton.bpm.webapp.impl.security.auth.Authentication;
+import org.operaton.bpm.webapp.impl.security.auth.Authentications;
+import org.operaton.bpm.webapp.impl.security.auth.UserAuthentication;
+import org.operaton.bpm.webapp.impl.security.filter.util.FilterRules;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -27,26 +38,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
-import org.operaton.bpm.cockpit.Cockpit;
-import org.operaton.bpm.cockpit.impl.DefaultCockpitRuntimeDelegate;
-import org.operaton.bpm.engine.ProcessEngine;
-import org.operaton.bpm.engine.impl.util.IoUtil;
-import org.operaton.bpm.webapp.impl.security.auth.Authentication;
-import org.operaton.bpm.webapp.impl.security.auth.Authentications;
-import org.operaton.bpm.webapp.impl.security.auth.UserAuthentication;
-import org.operaton.bpm.webapp.impl.security.filter.util.FilterRules;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.mockito.Mockito;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 /**
  *
  * @author nico.rehwaldt
  */
-@RunWith(Parameterized.class)
 public class SecurityFilterRulesTest {
 
   public static final String FILTER_RULES_FILE = "src/main/webapp/WEB-INF/securityFilterRules.json";
@@ -63,18 +61,21 @@ public class SecurityFilterRulesTest {
 
   protected String applicationPath;
 
-  @Parameterized.Parameters
   public static Collection<String> data() {
     return Arrays.asList(EMPTY_PATH, CUSTOM_APP_PATH);
   }
 
-  public SecurityFilterRulesTest(String applicationPath) throws IOException {
+  public void initSecurityFilterRulesTest(String applicationPath) {
     this.applicationPath = applicationPath;
-    FILTER_RULES = loadFilterRules(applicationPath);
+      try {
+          FILTER_RULES = loadFilterRules(applicationPath);
+      } catch (IOException e) {
+        fail(e);
+      }
   }
 
-  @Before
-  public void createEngine()
+  @BeforeEach
+  void createEngine()
   {
     final ProcessEngine engine = Mockito.mock(ProcessEngine.class);
 
@@ -92,36 +93,45 @@ public class SecurityFilterRulesTest {
     });
   }
 
-  @After
-  public void after() {
+  @AfterEach
+  void after() {
     Authentications.setCurrent(null);
     Cockpit.setCockpitRuntimeDelegate(null);
   }
 
-  @Test
-  public void shouldHaveRulesLoaded() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldHaveRulesLoaded(String applicationPath) {
+    initSecurityFilterRulesTest(applicationPath);
     assertThat(FILTER_RULES).hasSize(1);
   }
 
 
-  @Test
-  public void shouldPassPasswordPolicy() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassPasswordPolicy(String applicationPath) {
+    initSecurityFilterRulesTest(applicationPath);
     assertThat(isAuthorized("GET",
       applicationPath + "/api/engine/engine/default/identity/password-policy")).isTrue();
     assertThat(isAuthorized("POST",
       applicationPath + "/api/engine/engine/default/identity/password-policy")).isTrue();
   }
 
-  @Test
-  public void shouldPassStaticCockpitPluginResources_GET() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassStaticCockpitPluginResources_GET(String applicationPath) {
+    initSecurityFilterRulesTest(applicationPath);
     assertThat(isAuthorized("GET",
       applicationPath + "/api/cockpit/plugin/some-plugin/static/foo.html")).isTrue();
     assertThat(isAuthorized("GET",
       applicationPath + "/api/cockpit/plugin/bar/static/foo.html")).isTrue();
   }
 
-  @Test
-  public void shouldRejectEngineApi_GET() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldRejectEngineApi_GET(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     authenticatedForEngine("otherEngine", new Runnable() {
       @Override
@@ -136,8 +146,11 @@ public class SecurityFilterRulesTest {
     });
   }
 
-  @Test
-  public void shouldGrantEngineApi_GET() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldGrantEngineApi_GET(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     authenticatedForEngine("default", new Runnable() {
       @Override
@@ -152,8 +165,11 @@ public class SecurityFilterRulesTest {
     });
   }
 
-  @Test
-  public void shouldRejectCockpitPluginApi_GET() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldRejectCockpitPluginApi_GET(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     authenticatedForEngine("otherEngine", new Runnable() {
       @Override
@@ -169,8 +185,10 @@ public class SecurityFilterRulesTest {
     });
   }
 
-  @Test
-  public void shouldPassCockpitPluginApi_GET_LOGGED_IN() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassCockpitPluginApi_GET_LOGGED_IN(String applicationPath) {
+    initSecurityFilterRulesTest(applicationPath);
     authenticatedForEngine("default", new Runnable() {
       @Override
       public void run() {
@@ -186,8 +204,11 @@ public class SecurityFilterRulesTest {
     });
   }
 
-  @Test
-  public void shouldPassCockpit_GET_LOGGED_OUT() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassCockpit_GET_LOGGED_OUT(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     Authorization authorization =
       getAuthorization("GET", applicationPath + "/app/cockpit/non-existing-engine/foo");
@@ -196,8 +217,11 @@ public class SecurityFilterRulesTest {
     assertThat(authorization.isAuthenticated()).isFalse();
   }
 
-  @Test
-  public void shouldPassCockpit_GET_LOGGED_IN() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassCockpit_GET_LOGGED_IN(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     authenticatedForApp("default", "cockpit", new Runnable() {
 
@@ -212,8 +236,11 @@ public class SecurityFilterRulesTest {
     });
   }
 
-  @Test
-  public void shouldPassCockpitNonExistingEngine_GET_LOGGED_IN() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassCockpitNonExistingEngine_GET_LOGGED_IN(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     authenticatedForApp("default", "cockpit", new Runnable() {
 
@@ -229,8 +256,11 @@ public class SecurityFilterRulesTest {
   }
 
 
-  @Test
-  public void shouldRejectTasklistApi_GET() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldRejectTasklistApi_GET(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     authenticatedForEngine("otherEngine", new Runnable() {
       @Override
@@ -246,8 +276,10 @@ public class SecurityFilterRulesTest {
     });
   }
 
-  @Test
-  public void shouldPassTasklistApi_GET_LOGGED_IN() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassTasklistApi_GET_LOGGED_IN(String applicationPath) {
+    initSecurityFilterRulesTest(applicationPath);
     authenticatedForEngine("default", new Runnable() {
       @Override
       public void run() {
@@ -262,9 +294,11 @@ public class SecurityFilterRulesTest {
     });
   }
 
-  @Test
-  public void shouldRejectTasklistApi_GET_LOGGED_OUT()
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldRejectTasklistApi_GET_LOGGED_OUT(String applicationPath)
   {
+    initSecurityFilterRulesTest(applicationPath);
     Authorization authorization =
       getAuthorization("POST",
         applicationPath + "/api/tasklist/plugin/example-plugin/default/example-resource");
@@ -273,8 +307,11 @@ public class SecurityFilterRulesTest {
     assertThat(authorization.isAuthenticated()).isFalse();
   }
 
-  @Test
-  public void shouldPassTasklistPluginResource_GET_LOGGED_IN() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassTasklistPluginResource_GET_LOGGED_IN(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     authenticatedForEngine("default", new Runnable() {
       @Override
@@ -290,8 +327,11 @@ public class SecurityFilterRulesTest {
     });
   }
 
-  @Test
-  public void shouldPassTasklistPluginResource_GET_LOGGED_OUT() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassTasklistPluginResource_GET_LOGGED_OUT(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     Authorization authorization =
       getAuthorization("GET",
@@ -302,8 +342,11 @@ public class SecurityFilterRulesTest {
   }
 
 
-  @Test
-  public void shouldPassTasklist_GET_LOGGED_OUT() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassTasklist_GET_LOGGED_OUT(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     Authorization authorization =
       getAuthorization("GET", applicationPath + "/app/tasklist/non-existing-engine");
@@ -312,8 +355,11 @@ public class SecurityFilterRulesTest {
     assertThat(authorization.isAuthenticated()).isFalse();
   }
 
-  @Test
-  public void shouldPassTasklist_GET_LOGGED_IN() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassTasklist_GET_LOGGED_IN(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     authenticatedForApp("default", "tasklist", new Runnable() {
 
@@ -328,8 +374,11 @@ public class SecurityFilterRulesTest {
     });
   }
 
-  @Test
-  public void shouldRejectAdminApi_GET_LOGGED_OUT() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldRejectAdminApi_GET_LOGGED_OUT(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     Authorization authorization =
       getAuthorization("GET", applicationPath + "/api/admin/auth/user/some-engine/");
@@ -344,8 +393,11 @@ public class SecurityFilterRulesTest {
     assertThat(authorization.isAuthenticated()).isFalse();
   }
 
-  @Test
-  public void shouldPassAdminApi_GET_LOGGED_IN() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassAdminApi_GET_LOGGED_IN(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     authenticatedForApp("default", "admin", new Runnable() {
 
@@ -360,8 +412,11 @@ public class SecurityFilterRulesTest {
     });
   }
 
-  @Test
-  public void shouldPassAdminApi_AnonymousEndpoints_LOGGED_OUT() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassAdminApi_AnonymousEndpoints_LOGGED_OUT(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     Authorization authorization =
       getAuthorization("GET", applicationPath + "/api/admin/auth/user/bar");
@@ -389,8 +444,11 @@ public class SecurityFilterRulesTest {
   }
 
 
-  @Test
-  public void shouldRejectAdminApiPlugin_GET_LOGGED_OUT() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldRejectAdminApiPlugin_GET_LOGGED_OUT(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     Authorization authorization =
       getAuthorization("GET",
@@ -400,8 +458,11 @@ public class SecurityFilterRulesTest {
     assertThat(authorization.isAuthenticated()).isFalse();
   }
 
-  @Test
-  public void shouldPassAdminApiPlugin_GET_LOGGED_IN() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassAdminApiPlugin_GET_LOGGED_IN(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     authenticatedForApp("default", "admin", new Runnable() {
 
@@ -417,8 +478,11 @@ public class SecurityFilterRulesTest {
     });
   }
 
-  @Test
-  public void shouldPassAdmin_GET_LOGGED_OUT() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassAdmin_GET_LOGGED_OUT(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     Authorization authorization =
       getAuthorization("GET", applicationPath + "/app/admin/default");
@@ -427,8 +491,11 @@ public class SecurityFilterRulesTest {
     assertThat(authorization.isAuthenticated()).isFalse();
   }
 
-  @Test
-  public void shouldPassAdmin_GET_LOGGED_IN() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassAdmin_GET_LOGGED_IN(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     authenticatedForApp("default", "admin", new Runnable() {
 
@@ -444,8 +511,11 @@ public class SecurityFilterRulesTest {
   }
 
 
-  @Test
-  public void shouldPassAdminResources_GET_LOGGED_OUT() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassAdminResources_GET_LOGGED_OUT(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     Authorization authorization =
       getAuthorization("GET", applicationPath + "/app/admin/scripts");
@@ -454,8 +524,11 @@ public class SecurityFilterRulesTest {
     assertThat(authorization.isAuthenticated()).isFalse();
   }
 
-  @Test
-  public void shouldPassAdminResources_GET_LOGGED_IN() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassAdminResources_GET_LOGGED_IN(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     authenticatedForApp("default", "admin", new Runnable() {
 
@@ -470,8 +543,11 @@ public class SecurityFilterRulesTest {
     });
   }
 
-  @Test
-  public void shouldPassAdminLicenseCheck_GET_LOGGED_OUT() {
+  @MethodSource("data")
+  @ParameterizedTest
+  void shouldPassAdminLicenseCheck_GET_LOGGED_OUT(String applicationPath) {
+
+    initSecurityFilterRulesTest(applicationPath);
 
     Authorization authorization =
       getAuthorization("GET", applicationPath + "/api/admin/plugin/license/default/check-key");

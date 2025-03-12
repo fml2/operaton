@@ -16,53 +16,42 @@
  */
 package org.operaton.bpm.webapp.impl.security.auth;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.Date;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.operaton.bpm.engine.AuthorizationService;
 import org.operaton.bpm.engine.IdentityService;
-import org.operaton.bpm.engine.ProcessEngine;
 import org.operaton.bpm.engine.ProcessEngineConfiguration;
 import org.operaton.bpm.engine.authorization.Authorization;
 import org.operaton.bpm.engine.authorization.Permissions;
 import org.operaton.bpm.engine.authorization.Resources;
 import org.operaton.bpm.engine.identity.User;
 import org.operaton.bpm.engine.impl.util.ClockUtil;
-import org.operaton.bpm.engine.test.ProcessEngineRule;
+import org.operaton.bpm.engine.test.junit5.ProcessEngineExtension;
 import org.operaton.bpm.webapp.impl.util.ServletContextUtil;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
+
+import java.util.Date;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Thorben Lindhauer
  *
  */
-public class UserAuthenticationResourceTest {
+class UserAuthenticationResourceTest {
 
-  @Rule
-  public ProcessEngineRule processEngineRule = new ProcessEngineRule("operaton-test-engine.cfg.xml");
+  @RegisterExtension
+  static ProcessEngineExtension processEngineExtension = ProcessEngineExtension.builder().configurationResource("operaton-test-engine.cfg.xml").build();
 
-  protected ProcessEngine processEngine;
-  protected ProcessEngineConfiguration processEngineConfiguration;
-  protected IdentityService identityService;
-  protected AuthorizationService authorizationService;
+  ProcessEngineConfiguration processEngineConfiguration;
+  IdentityService identityService;
+  AuthorizationService authorizationService;
 
-  @Before
-  public void setUp() {
-    this.processEngine = processEngineRule.getProcessEngine();
-    this.processEngineConfiguration = processEngine.getProcessEngineConfiguration();
-    this.identityService = processEngine.getIdentityService();
-    this.authorizationService = processEngine.getAuthorizationService();
-  }
-
-  @After
-  public void tearDown() {
+  @AfterEach
+  void tearDown() {
     ClockUtil.reset();
     processEngineConfiguration.setAuthorizationEnabled(false);
 
@@ -77,7 +66,7 @@ public class UserAuthenticationResourceTest {
   }
 
   @Test
-  public void testAuthorizationCheckGranted() {
+  void authorizationCheckGranted() {
     // given
     User jonny = identityService.newUser("jonny");
     jonny.setPassword("jonnyspassword");
@@ -99,11 +88,11 @@ public class UserAuthenticationResourceTest {
     Response response = authResource.doLogin("webapps-test-engine", "tasklist", "jonny", "jonnyspassword");
 
     // then
-    Assert.assertEquals(Status.OK.getStatusCode(), response.getStatus());
+    assertThat(response.getStatus()).isEqualTo(Status.OK.getStatusCode());
   }
 
   @Test
-  public void testSessionRevalidationOnAuthorization() {
+  void sessionRevalidationOnAuthorization() {
     // given
     User jonny = identityService.newUser("jonny");
     jonny.setPassword("jonnyspassword");
@@ -135,13 +124,13 @@ public class UserAuthenticationResourceTest {
     String newestSessionId = authResource.request.getSession().getId();
 
     // then
-    Assert.assertEquals(Status.OK.getStatusCode(), response.getStatus());
-    Assert.assertNotEquals(oldSessionId, newSessionId);
-    Assert.assertNotEquals(newSessionId, newestSessionId);
+    assertThat(response.getStatus()).isEqualTo(Status.OK.getStatusCode());
+    assertThat(newSessionId).isNotEqualTo(oldSessionId);
+    assertThat(newestSessionId).isNotEqualTo(newSessionId);
   }
 
   @Test
-  public void testAuthorizationCheckNotGranted() {
+  void authorizationCheckNotGranted() {
     // given
     User jonny = identityService.newUser("jonny");
     jonny.setPassword("jonnyspassword");
@@ -156,11 +145,11 @@ public class UserAuthenticationResourceTest {
     Response response = authResource.doLogin("webapps-test-engine", "tasklist", "jonny", "jonnyspassword");
 
     // then
-    Assert.assertEquals(Status.FORBIDDEN.getStatusCode(), response.getStatus());
+    assertThat(response.getStatus()).isEqualTo(Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
-  public void testAuthorizationCheckDeactivated() {
+  void authorizationCheckDeactivated() {
     // given
     User jonny = identityService.newUser("jonny");
     jonny.setPassword("jonnyspassword");
@@ -175,11 +164,11 @@ public class UserAuthenticationResourceTest {
     Response response = authResource.doLogin("webapps-test-engine", "tasklist", "jonny", "jonnyspassword");
 
     // then
-    Assert.assertEquals(Status.OK.getStatusCode(), response.getStatus());
+    assertThat(response.getStatus()).isEqualTo(Status.OK.getStatusCode());
   }
 
   @Test
-  public void shouldSetAuthCacheValidationTime() {
+  void shouldSetAuthCacheValidationTime() {
     // given
     ClockUtil.setCurrentTime(ClockUtil.getCurrentTime());
     User jonny = identityService.newUser("jonny");
