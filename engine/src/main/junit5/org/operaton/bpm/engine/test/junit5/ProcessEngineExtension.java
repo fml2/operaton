@@ -279,18 +279,14 @@ public class ProcessEngineExtension implements TestWatcher,
       processEngineConfiguration.setTenantCheckEnabled(tenantCheckEnabled);
     }
 
-      TestHelper.resetIdGenerator(processEngineConfiguration);
-      ClockUtil.reset();
-      PlatformDiagnosticsRegistry.clear();
+   TestHelper.resetIdGenerator(processEngineConfiguration);
+   ClockUtil.reset();
+   PlatformDiagnosticsRegistry.clear();
 
-      // finally clear database and fail test if database is dirty
-      if (ensureCleanAfterTest) {
-        TestHelper.assertAndEnsureCleanDbAndCache(processEngine);
-      }
-    } finally {
-      processEngineConfiguration.setAuthorizationEnabled(authorizationEnabled);
-      processEngineConfiguration.setTenantCheckEnabled(tenantCheckEnabled);
-    }
+   // finally clear database and fail test if database is dirty
+   if (ensureCleanAfterTest) {
+     TestHelper.assertAndEnsureCleanDbAndCache(processEngine);
+   }
   }
 
   @Override
