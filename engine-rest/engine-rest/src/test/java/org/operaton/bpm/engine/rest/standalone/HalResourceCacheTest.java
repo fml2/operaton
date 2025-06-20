@@ -16,6 +16,28 @@
  */
 package org.operaton.bpm.engine.rest.standalone;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.operaton.bpm.engine.rest.hal.cache.HalRelationCacheConfiguration.CONFIG_CACHES;
+import static org.operaton.bpm.engine.rest.hal.cache.HalRelationCacheConfiguration.CONFIG_CACHE_IMPLEMENTATION;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.operaton.bpm.engine.identity.User;
 import org.operaton.bpm.engine.identity.UserQuery;
 import org.operaton.bpm.engine.impl.util.ClockUtil;
@@ -33,43 +55,25 @@ import org.operaton.bpm.engine.rest.hal.cache.HalRelationCacheConfigurationExcep
 import org.operaton.bpm.engine.rest.hal.identitylink.HalIdentityLink;
 import org.operaton.bpm.engine.rest.hal.user.HalUser;
 import org.operaton.bpm.engine.task.IdentityLink;
-import static org.operaton.bpm.engine.rest.hal.cache.HalRelationCacheConfiguration.CONFIG_CACHES;
-import static org.operaton.bpm.engine.rest.hal.cache.HalRelationCacheConfiguration.CONFIG_CACHE_IMPLEMENTATION;
 
-import java.io.IOException;
-import java.util.*;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-public class HalResourceCacheTest extends AbstractRestServiceTest {
+class HalResourceCacheTest extends AbstractRestServiceTest {
 
   protected DefaultHalResourceCache cache;
   protected HalRelationCacheBootstrap contextListener;
 
-  @Before
-  public void createCache() {
+  @BeforeEach
+  void createCache() {
     cache = new DefaultHalResourceCache(100, 100);
     contextListener = new HalRelationCacheBootstrap();
   }
 
-  @After
-  public void destroy() {
+  @AfterEach
+  void destroy() {
     contextListener.contextDestroyed(null);
   }
 
   @Test
-  public void testResourceRetrieval() {
+  void testResourceRetrieval() {
     cache.put("hello", "world");
 
     assertThat(cache.get(null)).isNull();
@@ -78,7 +82,7 @@ public class HalResourceCacheTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testCacheCapacity() {
+  void testCacheCapacity() {
     assertEquals(0, cache.size());
 
     cache.put("a", "a");
@@ -100,7 +104,7 @@ public class HalResourceCacheTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testEntryExpiration() {
+  void testEntryExpiration() {
     cache.put("hello", "world");
 
     assertEquals("world", cache.get("hello"));
@@ -113,21 +117,21 @@ public class HalResourceCacheTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testInvalidConfigurationFormat() {
+  void testInvalidConfigurationFormat() {
     assertThatThrownBy(() -> contextListener.configureCaches("<!xml>"))
       .isInstanceOf(HalRelationCacheConfigurationException.class)
       .hasCauseInstanceOf(IOException.class);
   }
 
   @Test
-  public void testUnknownCacheImplementationClass() {
+  void testUnknownCacheImplementationClass() {
     assertThatThrownBy(() -> contextListener.configureCaches("{\"" + CONFIG_CACHE_IMPLEMENTATION +"\": \"org.operaton.bpm.UnknownCache\" }"))
       .isInstanceOf(HalRelationCacheConfigurationException.class)
       .hasCauseInstanceOf(ClassNotFoundException.class);
   }
 
   @Test
-  public void testCacheImplementationNotImplementingCache() {
+  void testCacheImplementationNotImplementingCache() {
     String contextParameter = "{\"" + CONFIG_CACHE_IMPLEMENTATION + "\": \"" + getClass().getName() + "\" }";
     assertThatThrownBy(() -> contextListener.configureCaches(contextParameter))
       .isInstanceOf(HalRelationCacheConfigurationException.class)
@@ -135,7 +139,7 @@ public class HalResourceCacheTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testCacheCreation() {
+  void testCacheCreation() {
     String contextParameter = "{" +
         "\"" + CONFIG_CACHE_IMPLEMENTATION + "\": \"" + DefaultHalResourceCache.class.getName() + "\"," +
         "\"" + CONFIG_CACHES + "\": {" +
@@ -154,7 +158,7 @@ public class HalResourceCacheTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testCacheInvalidParameterName() {
+  void testCacheInvalidParameterName() {
     HalRelationCacheConfiguration configuration = new HalRelationCacheConfiguration();
     configuration.setCacheImplementationClass(DefaultHalResourceCache.class);
     configuration.addCacheConfiguration(HalUser.class, Collections.singletonMap("unknown", "property"));
@@ -165,7 +169,7 @@ public class HalResourceCacheTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testEntityCaching() {
+  void testEntityCaching() {
     String[] userIds = new String[]{"test"};
     // mock user and query
     User user = mock(User.class);
@@ -229,7 +233,7 @@ public class HalResourceCacheTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testIdentityLinkCaching() {
+  void testIdentityLinkCaching() {
     String[] taskIds = new String[]{"test"};
     // mock identityLinks and query
     IdentityLink link1 = mock(IdentityLink.class);

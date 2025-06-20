@@ -41,10 +41,10 @@ import org.operaton.bpm.engine.repository.DecisionDefinition;
 import org.operaton.bpm.engine.repository.DecisionDefinitionQuery;
 import org.operaton.bpm.engine.rest.exception.InvalidRequestException;
 import org.operaton.bpm.engine.rest.helper.MockProvider;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -53,16 +53,16 @@ import io.restassured.response.Response;
 
 public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String DECISION_DEFINITION_QUERY_URL = TEST_RESOURCE_ROOT_PATH + "/decision-definition";
   protected static final String DECISION_DEFINITION_COUNT_QUERY_URL = DECISION_DEFINITION_QUERY_URL + "/count";
 
   private DecisionDefinitionQuery mockedQuery;
 
-  @Before
-  public void setUpRuntime() {
+  @BeforeEach
+  void setUpRuntime() {
     mockedQuery = createMockDecisionDefinitionQuery(MockProvider.createMockDecisionDefinitions());
   }
 
@@ -77,7 +77,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testEmptyQuery() {
+  void testEmptyQuery() {
     given()
       .then()
         .expect()
@@ -89,7 +89,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testInvalidNumericParameter() {
+  void testInvalidNumericParameter() {
     String anInvalidIntegerQueryParam = "aString";
 
     given()
@@ -110,7 +110,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
    * or "false" are evaluated to "false" and don't cause a 400 error.
    */
   @Test
-  public void testInvalidBooleanParameter() {
+  void testInvalidBooleanParameter() {
     String anInvalidBooleanQueryParam = "neitherTrueNorFalse";
     given()
       .queryParam("active", anInvalidBooleanQueryParam)
@@ -122,13 +122,13 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testInvalidSortingOptions() {
+  void testInvalidSortingOptions() {
     executeAndVerifySorting("anInvalidSortByOption", "asc", Status.BAD_REQUEST);
     executeAndVerifySorting("id", "anInvalidSortOrderOption", Status.BAD_REQUEST);
   }
 
   @Test
-  public void testSortByParameterOnly() {
+  void testSortByParameterOnly() {
     given()
       .queryParam("sortBy", "id")
       .then()
@@ -139,7 +139,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testSortOrderParameterOnly() {
+  void testSortOrderParameterOnly() {
     given()
       .queryParam("sortOrder", "asc")
       .then()
@@ -161,7 +161,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testSortingParameters() {
+  void testSortingParameters() {
     // asc
     InOrder inOrder = inOrder(mockedQuery);
     executeAndVerifySorting("id", "asc", Status.OK);
@@ -266,7 +266,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testSuccessfulPagination() {
+  void testSuccessfulPagination() {
     int firstResult = 0;
     int maxResults = 10;
 
@@ -286,7 +286,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
    * If parameter "firstResult" is missing, we expect 0 as default.
    */
   @Test
-  public void testMissingFirstResultParameter() {
+  void testMissingFirstResultParameter() {
     int maxResults = 10;
 
     given()
@@ -304,7 +304,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
    * If parameter "maxResults" is missing, we expect Integer.MAX_VALUE as default.
    */
   @Test
-  public void testMissingMaxResultsParameter() {
+  void testMissingMaxResultsParameter() {
     int firstResult = 10;
 
     given()
@@ -319,7 +319,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testDecisionDefinitionRetrieval() {
+  void testDecisionDefinitionRetrieval() {
     Response response = given()
         .then()
           .expect()
@@ -361,7 +361,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testDecisionDefinitionRetrievalByList() {
+  void testDecisionDefinitionRetrievalByList() {
     mockedQuery = createMockDecisionDefinitionQuery(MockProvider.createMockTwoDecisionDefinitions());
 
     Response response = given()
@@ -377,7 +377,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
     inOrder.verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> definitions = from(content).getList("");
+    List<Map<String, Object>> definitions = from(content).getList("");
     assertThat(definitions).hasSize(2);
 
     String returnedDefinitionId1 = from(content).getString("[0].id");
@@ -388,7 +388,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testDecisionDefinitionRetrievalByEmptyList() {
+  void testDecisionDefinitionRetrievalByEmptyList() {
     given()
       .queryParam("decisionDefinitionIdIn", "")
       .then().expect()
@@ -403,7 +403,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testAdditionalParameters() {
+  void testAdditionalParameters() {
     Map<String, String> queryParameters = getCompleteQueryParameters();
 
     given()
@@ -437,7 +437,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testDecisionDefinitionTenantIdList() {
+  void testDecisionDefinitionTenantIdList() {
     List<DecisionDefinition> decisionDefinitions = Arrays.asList(
         MockProvider.mockDecisionDefinition().tenantId(MockProvider.EXAMPLE_TENANT_ID).build(),
         MockProvider.mockDecisionDefinition().id(MockProvider.ANOTHER_EXAMPLE_CASE_DEFINITION_ID).tenantId(MockProvider.ANOTHER_EXAMPLE_TENANT_ID).build());
@@ -454,7 +454,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> definitions = from(content).getList("");
+    List<Map<String, Object>> definitions = from(content).getList("");
     assertThat(definitions).hasSize(2);
 
     String returnedTenantId1 = from(content).getString("[0].tenantId");
@@ -465,7 +465,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testDecisionDefinitionWithoutTenantId() {
+  void testDecisionDefinitionWithoutTenantId() {
     Response response = given()
       .queryParam("withoutTenantId", true)
     .then().expect()
@@ -477,7 +477,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> definitions = from(content).getList("");
+    List<Map<String, Object>> definitions = from(content).getList("");
     assertThat(definitions).hasSize(1);
 
     String returnedTenantId1 = from(content).getString("[0].tenantId");
@@ -485,7 +485,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testDecisionDefinitionTenantIdIncludeDefinitionsWithoutTenantid() {
+  void testDecisionDefinitionTenantIdIncludeDefinitionsWithoutTenantid() {
     List<DecisionDefinition> decisionDefinitions = Arrays.asList(
         MockProvider.mockDecisionDefinition().tenantId(null).build(),
         MockProvider.mockDecisionDefinition().tenantId(MockProvider.EXAMPLE_TENANT_ID).build());
@@ -504,7 +504,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> definitions = from(content).getList("");
+    List<Map<String, Object>> definitions = from(content).getList("");
     assertThat(definitions).hasSize(2);
 
     String returnedTenantId1 = from(content).getString("[0].tenantId");
@@ -515,7 +515,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testQueryCount() {
+  void testQueryCount() {
     expect().statusCode(Status.OK.getStatusCode())
       .body("count", equalTo(1))
       .when().get(DECISION_DEFINITION_COUNT_QUERY_URL);
@@ -524,7 +524,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testDecisionDefinitionVersionTag() {
+  void testDecisionDefinitionVersionTag() {
     List<DecisionDefinition> decisionDefinitions = Arrays.asList(
       MockProvider.mockDecisionDefinition().versionTag(MockProvider.EXAMPLE_VERSION_TAG).build(),
       MockProvider.mockDecisionDefinition().id(MockProvider.ANOTHER_EXAMPLE_DECISION_DEFINITION_ID).versionTag(MockProvider.ANOTHER_EXAMPLE_VERSION_TAG).build());
@@ -542,7 +542,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testQueryByDeployTimeAfter() {
+  void testQueryByDeployTimeAfter() {
     String deployTime = withTimezone("2020-03-27T00:00:00");
     Date date = DateTimeUtil.parseDate(deployTime);
 
@@ -555,7 +555,7 @@ public class DecisionDefinitionRestServiceQueryTest extends AbstractRestServiceT
   }
 
   @Test
-  public void testQueryByDeployTimeAt() {
+  void testQueryByDeployTimeAt() {
     String deployTime = withTimezone("2020-03-27T00:00:00");
     Date date = DateTimeUtil.parseDate(deployTime);
 

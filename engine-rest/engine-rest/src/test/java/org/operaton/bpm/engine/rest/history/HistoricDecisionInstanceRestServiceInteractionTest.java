@@ -19,14 +19,12 @@ package org.operaton.bpm.engine.rest.history;
 import static io.restassured.RestAssured.given;
 import static io.restassured.path.json.JsonPath.from;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.operaton.bpm.engine.rest.helper.MockProvider.EXAMPLE_DECISION_DEFINITION_ID;
-import static org.operaton.bpm.engine.rest.helper.MockProvider.EXAMPLE_DECISION_INSTANCE_ID;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -36,6 +34,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.operaton.bpm.engine.rest.helper.MockProvider.EXAMPLE_DECISION_DEFINITION_ID;
+import static org.operaton.bpm.engine.rest.helper.MockProvider.EXAMPLE_DECISION_INSTANCE_ID;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,6 +44,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.InOrder;
 import org.operaton.bpm.engine.BadUserRequestException;
 import org.operaton.bpm.engine.HistoryService;
 import org.operaton.bpm.engine.batch.Batch;
@@ -57,21 +61,16 @@ import org.operaton.bpm.engine.rest.dto.history.HistoricDecisionInstanceQueryDto
 import org.operaton.bpm.engine.rest.exception.InvalidRequestException;
 import org.operaton.bpm.engine.rest.helper.MockProvider;
 import org.operaton.bpm.engine.rest.util.JsonPathUtil;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.mockito.InOrder;
-
-import jakarta.ws.rs.core.Response.Status;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 public class HistoricDecisionInstanceRestServiceInteractionTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String HISTORIC_DECISION_INSTANCE_URL = TEST_RESOURCE_ROOT_PATH + "/history/decision-instance";
   protected static final String HISTORIC_SINGLE_DECISION_INSTANCE_URL = HISTORIC_DECISION_INSTANCE_URL + "/{id}";
@@ -82,8 +81,8 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   protected HistoricDecisionInstance historicInstanceMock;
   protected HistoricDecisionInstanceQuery historicQueryMock;
 
-  @Before
-  public void setUpRuntimeData() {
+  @BeforeEach
+  void setUpRuntimeData() {
     historyServiceMock = mock(HistoryService.class);
 
     // runtime service
@@ -98,7 +97,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testGetSingleHistoricDecisionInstance() {
+  void testGetSingleHistoricDecisionInstance() {
     Response response = given()
         .pathParam("id", MockProvider.EXAMPLE_HISTORIC_DECISION_INSTANCE_ID)
       .then().expect()
@@ -158,7 +157,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testGetSingleHistoricDecisionInstanceWithInputs() {
+  void testGetSingleHistoricDecisionInstanceWithInputs() {
     historicInstanceMock = MockProvider.createMockHistoricDecisionInstanceWithInputs();
     when(historicQueryMock.singleResult()).thenReturn(historicInstanceMock);
 
@@ -187,7 +186,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testGetSingleHistoricDecisionInstanceWithOutputs() {
+  void testGetSingleHistoricDecisionInstanceWithOutputs() {
     historicInstanceMock = MockProvider.createMockHistoricDecisionInstanceWithOutputs();
     when(historicQueryMock.singleResult()).thenReturn(historicInstanceMock);
 
@@ -216,7 +215,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testGetSingleHistoricDecisionInstanceWithInputsAndOutputs() {
+  void testGetSingleHistoricDecisionInstanceWithInputsAndOutputs() {
     historicInstanceMock = MockProvider.createMockHistoricDecisionInstanceWithInputsAndOutputs();
     when(historicQueryMock.singleResult()).thenReturn(historicInstanceMock);
 
@@ -248,7 +247,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testGetSingleHistoricDecisionInstanceWithDisabledBinaryFetching() {
+  void testGetSingleHistoricDecisionInstanceWithDisabledBinaryFetching() {
     historicInstanceMock = MockProvider.createMockHistoricDecisionInstanceWithInputsAndOutputs();
     when(historicQueryMock.singleResult()).thenReturn(historicInstanceMock);
 
@@ -267,7 +266,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testGetSingleHistoricDecisionInstanceWithDisabledCustomObjectDeserialization() {
+  void testGetSingleHistoricDecisionInstanceWithDisabledCustomObjectDeserialization() {
     historicInstanceMock = MockProvider.createMockHistoricDecisionInstanceWithInputsAndOutputs();
     when(historicQueryMock.singleResult()).thenReturn(historicInstanceMock);
 
@@ -286,7 +285,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testGetNonExistingHistoricCaseInstance() {
+  void testGetNonExistingHistoricCaseInstance() {
     when(historicQueryMock.singleResult()).thenReturn(null);
 
     given()
@@ -301,7 +300,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testDeleteAsync() {
+  void testDeleteAsync() {
     List<String> ids = Arrays.asList(EXAMPLE_DECISION_INSTANCE_ID);
 
     Batch batchEntity = MockProvider.createMockBatch();
@@ -324,7 +323,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testDeleteAsyncWithQuery() {
+  void testDeleteAsyncWithQuery() {
     Batch batchEntity = MockProvider.createMockBatch();
 
     when(historyServiceMock.deleteHistoricDecisionInstancesAsync(any(), any(), any())).thenReturn(batchEntity);
@@ -347,7 +346,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testDeleteAsyncWithIdsAndQuery() {
+  void testDeleteAsyncWithIdsAndQuery() {
     Batch batchEntity = MockProvider.createMockBatch();
 
     when(historyServiceMock.deleteHistoricDecisionInstancesAsync(
@@ -377,7 +376,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testDeleteAsyncWithBadRequestQuery() {
+  void testDeleteAsyncWithBadRequestQuery() {
     doThrow(new BadUserRequestException("process instance ids are empty"))
         .when(historyServiceMock).deleteHistoricDecisionInstancesAsync(eq((List<String>) null), eq((HistoricDecisionInstanceQuery) null), any());
 
@@ -389,7 +388,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void shouldSetRemovalTime_ByIds() {
+  void shouldSetRemovalTime_ByIds() {
     SetRemovalTimeSelectModeForHistoricDecisionInstancesBuilder builderMock =
       mock(SetRemovalTimeSelectModeForHistoricDecisionInstancesBuilder.class, RETURNS_DEEP_STUBS);
 
@@ -418,7 +417,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void shouldSetRemovalTime_ByQuery() {
+  void shouldSetRemovalTime_ByQuery() {
     SetRemovalTimeSelectModeForHistoricDecisionInstancesBuilder builderMock =
       mock(SetRemovalTimeSelectModeForHistoricDecisionInstancesBuilder.class, RETURNS_DEEP_STUBS);
 
@@ -449,7 +448,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void shouldSetRemovalTime_Absolute() {
+  void shouldSetRemovalTime_Absolute() {
     Date removalTime = new Date();
 
     SetRemovalTimeSelectModeForHistoricDecisionInstancesBuilder builderMock =
@@ -480,7 +479,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void shouldNotSetRemovalTime_Absolute() {
+  void shouldNotSetRemovalTime_Absolute() {
     SetRemovalTimeSelectModeForHistoricDecisionInstancesBuilder builderMock =
       mock(SetRemovalTimeSelectModeForHistoricDecisionInstancesBuilder.class, RETURNS_DEEP_STUBS);
 
@@ -508,7 +507,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void shouldClearRemovalTime() {
+  void shouldClearRemovalTime() {
     SetRemovalTimeSelectModeForHistoricDecisionInstancesBuilder builderMock =
       mock(SetRemovalTimeSelectModeForHistoricDecisionInstancesBuilder.class, RETURNS_DEEP_STUBS);
 
@@ -538,7 +537,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void shouldSetRemovalTime_Response() {
+  void shouldSetRemovalTime_Response() {
     SetRemovalTimeSelectModeForHistoricDecisionInstancesBuilder builderMock =
       mock(SetRemovalTimeSelectModeForHistoricDecisionInstancesBuilder.class, RETURNS_DEEP_STUBS);
 
@@ -559,7 +558,7 @@ public class HistoricDecisionInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void shouldSetRemovalTime_ThrowBadUserException() {
+  void shouldSetRemovalTime_ThrowBadUserException() {
     SetRemovalTimeSelectModeForHistoricDecisionInstancesBuilder builderMock =
       mock(SetRemovalTimeSelectModeForHistoricDecisionInstancesBuilder.class, RETURNS_DEEP_STUBS);
 

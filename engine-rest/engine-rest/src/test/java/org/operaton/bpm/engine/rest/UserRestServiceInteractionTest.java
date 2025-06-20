@@ -56,12 +56,11 @@ import org.operaton.bpm.engine.rest.dto.identity.UserProfileDto;
 import org.operaton.bpm.engine.rest.exception.ExceptionLogger;
 import org.operaton.bpm.engine.rest.exception.InvalidRequestException;
 import org.operaton.bpm.engine.rest.helper.MockProvider;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
-import org.operaton.commons.testing.ProcessEngineLoggingRule;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
+import org.operaton.bpm.engine.test.junit5.ProcessEngineLoggingExtension;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 
 import io.restassured.http.ContentType;
 
@@ -71,11 +70,11 @@ import io.restassured.http.ContentType;
  */
 public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
-  @Rule
-  public ProcessEngineLoggingRule loggingRule = new ProcessEngineLoggingRule()
+  @RegisterExtension
+  public ProcessEngineLoggingExtension loggingRule = new ProcessEngineLoggingExtension()
       .watch(ExceptionLogger.REST_API);
 
   protected static final String SERVICE_URL = TEST_RESOURCE_ROOT_PATH + "/user";
@@ -89,8 +88,8 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   protected AuthorizationService authorizationServiceMock;
   protected ProcessEngineConfiguration processEngineConfigurationMock;
 
-  @Before
-  public void setupUserData() {
+  @BeforeEach
+  void setupUserData() {
 
     identityServiceMock = mock(IdentityService.class);
     authorizationServiceMock = mock(AuthorizationService.class);
@@ -106,7 +105,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetSingleUserProfile() {
+  void testGetSingleUserProfile() {
     User sampleUser = MockProvider.createMockUser();
     UserQuery sampleUserQuery = mock(UserQuery.class);
     when(identityServiceMock.createUserQuery()).thenReturn(sampleUserQuery);
@@ -128,7 +127,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUserRestServiceOptions() {
+  void testUserRestServiceOptions() {
     String fullAuthorizationUrl = "http://localhost:" + PORT + TEST_RESOURCE_ROOT_PATH + UserRestService.PATH;
 
     when(processEngineConfigurationMock.isAuthorizationEnabled()).thenReturn(true);
@@ -157,7 +156,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUserRestServiceOptionsWithAuthorizationDisabled() {
+  void testUserRestServiceOptionsWithAuthorizationDisabled() {
     String fullAuthorizationUrl = "http://localhost:" + PORT + TEST_RESOURCE_ROOT_PATH + UserRestService.PATH;
 
     when(processEngineConfigurationMock.isAuthorizationEnabled()).thenReturn(false);
@@ -185,7 +184,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUserResourceOptionsUnauthenticated() {
+  void testUserResourceOptionsUnauthenticated() {
     String fullUserUrl = "http://localhost:" + PORT + TEST_RESOURCE_ROOT_PATH + "/user/" + MockProvider.EXAMPLE_USER_ID;
 
     User sampleUser = MockProvider.createMockUser();
@@ -222,7 +221,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUserResourceOptionsUnauthorized() {
+  void testUserResourceOptionsUnauthorized() {
     String fullUserUrl = "http://localhost:" + PORT + TEST_RESOURCE_ROOT_PATH + "/user/" + MockProvider.EXAMPLE_USER_ID;
 
     User sampleUser = MockProvider.createMockUser();
@@ -259,7 +258,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUserResourceOptionsDeleteAuthorized() {
+  void testUserResourceOptionsDeleteAuthorized() {
     String fullUserUrl = "http://localhost:" + PORT + TEST_RESOURCE_ROOT_PATH + "/user/" + MockProvider.EXAMPLE_USER_ID;
 
     User sampleUser = MockProvider.createMockUser();
@@ -299,7 +298,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUserResourceOptionsWithAuthorizationDisabled() {
+  void testUserResourceOptionsWithAuthorizationDisabled() {
     String fullUserUrl = "http://localhost:" + PORT + TEST_RESOURCE_ROOT_PATH + "/user/" + MockProvider.EXAMPLE_USER_ID;
 
     when(processEngineConfigurationMock.isAuthorizationEnabled()).thenReturn(false);
@@ -328,7 +327,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetNonExistingUserProfile() {
+  void testGetNonExistingUserProfile() {
     String exceptionMessage = "User with id aNonExistingUser does not exist";
     UserQuery sampleUserQuery = mock(UserQuery.class);
     when(identityServiceMock.createUserQuery()).thenReturn(sampleUserQuery);
@@ -348,7 +347,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testDeleteUser() {
+  void testDeleteUser() {
     given()
         .pathParam("id", MockProvider.EXAMPLE_USER_ID)
     .then().expect()
@@ -358,7 +357,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testDeleteNonExistingUser() {
+  void testDeleteNonExistingUser() {
     given()
         .pathParam("id", "non-existing")
     .then().expect()
@@ -368,7 +367,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testDeleteUserThrowsAuthorizationException() {
+  void testDeleteUserThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(identityServiceMock).deleteUser(MockProvider.EXAMPLE_USER_ID);
 
@@ -386,7 +385,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testCreateNewUserWithCredentials() {
+  void testCreateNewUserWithCredentials() {
     User newUser = MockProvider.createMockUser();
     when(identityServiceMock.newUser(MockProvider.EXAMPLE_USER_ID)).thenReturn(newUser);
 
@@ -408,7 +407,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testCreateNewUserWithoutCredentials() {
+  void testCreateNewUserWithoutCredentials() {
     User newUser = MockProvider.createMockUser();
     when(identityServiceMock.newUser(MockProvider.EXAMPLE_USER_ID)).thenReturn(newUser);
 
@@ -432,7 +431,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUserCreateExistingFails() {
+  void testUserCreateExistingFails() {
     User newUser = MockProvider.createMockUser();
     when(identityServiceMock.newUser(MockProvider.EXAMPLE_USER_ID)).thenReturn(newUser);
     doThrow(new ProcessEngineException("")).when(identityServiceMock).saveUser(newUser);
@@ -454,7 +453,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUserCreateThrowsAuthorizationException() {
+  void testUserCreateThrowsAuthorizationException() {
     User newUser = MockProvider.createMockUser();
     String message = "exception expected";
     when(identityServiceMock.newUser(MockProvider.EXAMPLE_USER_ID)).thenThrow(new AuthorizationException(message));
@@ -476,7 +475,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testSaveNewUserThrowsAuthorizationException() {
+  void testSaveNewUserThrowsAuthorizationException() {
     User newUser = MockProvider.createMockUser();
     when(identityServiceMock.newUser(MockProvider.EXAMPLE_USER_ID)).thenReturn(newUser);
     String message = "exception expected";
@@ -499,7 +498,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testPutCredentials() {
+  void testPutCredentials() {
     User initialUser = MockProvider.createMockUser();
     UserQuery sampleUserQuery = mock(UserQuery.class);
     when(identityServiceMock.createUserQuery()).thenReturn(sampleUserQuery);
@@ -525,7 +524,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testPutCredentialsThrowsAuthorizationException() {
+  void testPutCredentialsThrowsAuthorizationException() {
     User initialUser = MockProvider.createMockUser();
     UserQuery sampleUserQuery = mock(UserQuery.class);
     when(identityServiceMock.createUserQuery()).thenReturn(sampleUserQuery);
@@ -553,7 +552,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testChangeCredentials() {
+  void testChangeCredentials() {
     User initialUser = MockProvider.createMockUser();
     UserQuery sampleUserQuery = mock(UserQuery.class);
     when(identityServiceMock.createUserQuery()).thenReturn(sampleUserQuery);
@@ -589,7 +588,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testChangeCredentialsWithWrongAuthenticatedUserPassword() {
+  void testChangeCredentialsWithWrongAuthenticatedUserPassword() {
     String exceptionMessage = "The given authenticated user password is not valid.";
     User initialUser = MockProvider.createMockUser();
     UserQuery sampleUserQuery = mock(UserQuery.class);
@@ -622,7 +621,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testPutCredentialsNonExistingUserFails() {
+  void testPutCredentialsNonExistingUserFails() {
     String exceptionMessage = "User with id aNonExistingUser does not exist";
     UserQuery sampleUserQuery = mock(UserQuery.class);
     when(identityServiceMock.createUserQuery()).thenReturn(sampleUserQuery);
@@ -648,7 +647,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testPutProfile() {
+  void testPutProfile() {
     User initialUser = MockProvider.createMockUser();
     User userUpdate = MockProvider.createMockUserUpdate();
 
@@ -677,7 +676,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testPutProfileNonexistingFails() {
+  void testPutProfileNonexistingFails() {
     String exceptionMessage = "User with id aNonExistingUser does not exist";
     User userUpdate = MockProvider.createMockUserUpdate();
 
@@ -704,7 +703,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testPutProfileThrowsAuthorizationException() {
+  void testPutProfileThrowsAuthorizationException() {
     User initialUser = MockProvider.createMockUser();
     User userUpdate = MockProvider.createMockUserUpdate();
 
@@ -733,7 +732,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testReadOnlyUserCreateFails() {
+  void testReadOnlyUserCreateFails() {
     String exceptionMessage = "Identity service implementation is read-only.";
     User newUser = MockProvider.createMockUser();
     when(identityServiceMock.isReadOnly()).thenReturn(true);
@@ -749,7 +748,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testReadOnlyPutUserProfileFails() {
+  void testReadOnlyPutUserProfileFails() {
     String exceptionMessage = "Identity service implementation is read-only.";
     User userUdpdate = MockProvider.createMockUser();
     when(identityServiceMock.isReadOnly()).thenReturn(true);
@@ -768,7 +767,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testReadOnlyPutUserCredentialsFails() {
+  void testReadOnlyPutUserCredentialsFails() {
     String exceptionMessage = "Identity service implementation is read-only.";
     User userUdpdate = MockProvider.createMockUser();
     when(identityServiceMock.isReadOnly()).thenReturn(true);
@@ -787,7 +786,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testReadOnlyUserDeleteFails() {
+  void testReadOnlyUserDeleteFails() {
     String exceptionMessage = "Identity service implementation is read-only.";
     when(identityServiceMock.isReadOnly()).thenReturn(true);
 
@@ -802,7 +801,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUnlockUser() {
+  void testUnlockUser() {
     given()
       .pathParam("id", MockProvider.EXAMPLE_USER_ID)
     .then().expect()
@@ -814,7 +813,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUnlockUserNonExistingUser() {
+  void testUnlockUserNonExistingUser() {
     given()
       .pathParam("id", "non-existing")
     .then().expect()
@@ -824,7 +823,7 @@ public class UserRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUnlockUserThrowsAuthorizationException() {
+  void testUnlockUserThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(identityServiceMock).unlockUser(MockProvider.EXAMPLE_USER_ID);
 

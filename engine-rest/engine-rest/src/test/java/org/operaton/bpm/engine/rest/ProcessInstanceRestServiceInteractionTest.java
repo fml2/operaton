@@ -18,18 +18,10 @@ package org.operaton.bpm.engine.rest;
 
 import static io.restassured.RestAssured.given;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.operaton.bpm.engine.rest.helper.MockProvider.EXAMPLE_PROCESS_INSTANCE_COMMENT_FULL_MESSAGE;
-import static org.operaton.bpm.engine.rest.helper.MockProvider.EXAMPLE_PROCESS_INSTANCE_COMMENT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.operaton.bpm.engine.rest.helper.MockProvider.EXAMPLE_TASK_ID;
-import static org.operaton.bpm.engine.rest.helper.MockProvider.NON_EXISTING_ID;
-import static org.operaton.bpm.engine.rest.helper.MockProvider.createMockBatch;
-import static org.operaton.bpm.engine.rest.helper.MockProvider.createMockHistoricProcessInstance;
-import static org.operaton.bpm.engine.rest.util.DateTimeUtils.DATE_FORMAT_WITH_TIMEZONE;
-import static org.operaton.bpm.engine.rest.util.DateTimeUtils.withTimezone;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -45,11 +37,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import static org.operaton.bpm.engine.rest.helper.MockProvider.EXAMPLE_PROCESS_INSTANCE_COMMENT_FULL_MESSAGE;
+import static org.operaton.bpm.engine.rest.helper.MockProvider.EXAMPLE_PROCESS_INSTANCE_COMMENT_ID;
+import static org.operaton.bpm.engine.rest.helper.MockProvider.EXAMPLE_TASK_ID;
+import static org.operaton.bpm.engine.rest.helper.MockProvider.NON_EXISTING_ID;
+import static org.operaton.bpm.engine.rest.helper.MockProvider.createMockBatch;
+import static org.operaton.bpm.engine.rest.helper.MockProvider.createMockHistoricProcessInstance;
+import static org.operaton.bpm.engine.rest.util.DateTimeUtils.DATE_FORMAT_WITH_TIMEZONE;
+import static org.operaton.bpm.engine.rest.util.DateTimeUtils.withTimezone;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-import io.restassured.http.ContentType;
-import io.restassured.response.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,8 +54,16 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response.Status;
+
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 import org.operaton.bpm.engine.AuthorizationException;
 import org.operaton.bpm.engine.BadUserRequestException;
 import org.operaton.bpm.engine.ProcessEngineException;
@@ -104,7 +108,7 @@ import org.operaton.bpm.engine.rest.helper.variable.EqualsUntypedValue;
 import org.operaton.bpm.engine.rest.util.JsonPathUtil;
 import org.operaton.bpm.engine.rest.util.ModificationInstructionBuilder;
 import org.operaton.bpm.engine.rest.util.VariablesBuilder;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 import org.operaton.bpm.engine.runtime.MessageCorrelationAsyncBuilder;
 import org.operaton.bpm.engine.runtime.ProcessInstance;
 import org.operaton.bpm.engine.runtime.ProcessInstanceModificationInstantiationBuilder;
@@ -120,15 +124,14 @@ import org.operaton.bpm.engine.variable.type.ValueType;
 import org.operaton.bpm.engine.variable.value.FileValue;
 import org.operaton.bpm.engine.variable.value.LongValue;
 import org.operaton.bpm.engine.variable.value.ObjectValue;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
-import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+
+import io.restassured.http.ContentType;
+import io.restassured.response.Response;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response.Status;
 
 public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServiceTest {
 
@@ -138,8 +141,8 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   protected static final String DELETE_REASON = "deleteReason";
   protected static final String SKIP_IO_MAPPINGS = "skipIoMappings";
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String PROCESS_INSTANCE_URL = TEST_RESOURCE_ROOT_PATH + "/process-instance";
   protected static final String SINGLE_PROCESS_INSTANCE_URL = PROCESS_INSTANCE_URL + "/{id}";
@@ -197,8 +200,8 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
 
   private SetJobRetriesByProcessAsyncBuilder mockSetJobRetriesByProcessAsyncBuilder;
 
-  @Before
-  public void setUpRuntimeData() {
+  @BeforeEach
+  void setUpRuntimeData() {
     runtimeServiceMock = mock(RuntimeServiceImpl.class);
     mockManagementService = mock(ManagementServiceImpl.class);
     historyServiceMock = mock(HistoryServiceImpl.class);
@@ -255,7 +258,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetActivityInstanceTree() {
+  void testGetActivityInstanceTree() {
     Response response = given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID)
         .then().expect().statusCode(Status.OK.getStatusCode())
         .body("id", Matchers.equalTo(EXAMPLE_ACTIVITY_INSTANCE_ID))
@@ -304,12 +307,11 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
         .body("childTransitionInstances[0].incidents[0].activityId", Matchers.equalTo("anActivityId"))
         .when().get(PROCESS_INSTANCE_ACTIVIY_INSTANCES_URL);
 
-    Assert.assertEquals("Should return right number of properties", 13,
-        response.jsonPath().getMap("").size());
+    Assertions.assertEquals(13, response.jsonPath().getMap("").size(), "Should return right number of properties");
   }
 
   @Test
-  public void testGetActivityInstanceTreeForNonExistingProcessInstance() {
+  void testGetActivityInstanceTreeForNonExistingProcessInstance() {
     when(runtimeServiceMock.getActivityInstance(anyString())).thenReturn(null);
 
     given().pathParam("id", "aNonExistingProcessInstanceId")
@@ -320,7 +322,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetActivityInstanceTreeWithInternalError() {
+  void testGetActivityInstanceTreeWithInternalError() {
     when(runtimeServiceMock.getActivityInstance(anyString())).thenThrow(new ProcessEngineException("expected exception"));
 
     given().pathParam("id", "aNonExistingProcessInstanceId")
@@ -331,7 +333,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetActivityInstanceTreeThrowsAuthorizationException() {
+  void testGetActivityInstanceTreeThrowsAuthorizationException() {
     String message = "expected exception";
     when(runtimeServiceMock.getActivityInstance(anyString())).thenThrow(new AuthorizationException(message));
 
@@ -347,7 +349,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetVariables() {
+  void testGetVariables() {
     Response response = given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID)
       .then().expect().statusCode(Status.OK.getStatusCode())
       .body(EXAMPLE_VARIABLE_KEY, Matchers.notNullValue())
@@ -355,11 +357,11 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
       .body(EXAMPLE_VARIABLE_KEY + ".type", Matchers.equalTo(String.class.getSimpleName()))
       .when().get(PROCESS_INSTANCE_VARIABLES_URL);
 
-    Assert.assertEquals("Should return exactly one variable", 1, response.jsonPath().getMap("").size());
+    Assertions.assertEquals(1, response.jsonPath().getMap("").size(), "Should return exactly one variable");
   }
 
   @Test
-  public void testDeleteAsync() {
+  void testDeleteAsync() {
     List<String> ids = Arrays.asList(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
     when(runtimeServiceMock.deleteProcessInstancesAsync(any(), any(), any(), anyString(), anyBoolean(), anyBoolean(), anyBoolean())).thenReturn(new BatchEntity());
 
@@ -377,7 +379,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteAsyncWithSkipIoMappingsTrue() {
+  void testDeleteAsyncWithSkipIoMappingsTrue() {
     var ids = List.of(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
     when(runtimeServiceMock.deleteProcessInstancesAsync(any(), any(), any(), anyString(), anyBoolean(), anyBoolean(), eq(true))).thenReturn(new BatchEntity());
 
@@ -397,7 +399,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteAsyncWithSkipIoMappingsFalse() {
+  void testDeleteAsyncWithSkipIoMappingsFalse() {
     var ids = List.of(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
     when(runtimeServiceMock.deleteProcessInstancesAsync(any(), any(), any(), anyString(), anyBoolean(), anyBoolean(), eq(false))).thenReturn(new BatchEntity());
 
@@ -417,7 +419,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteAsyncWithQuery() {
+  void testDeleteAsyncWithQuery() {
     Map<String, Object> messageBodyJson = new HashMap<>();
     messageBodyJson.put(DELETE_REASON, TEST_DELETE_REASON);
     ProcessInstanceQueryDto query = new ProcessInstanceQueryDto();
@@ -443,7 +445,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteAsyncWithBadRequestQuery() {
+  void testDeleteAsyncWithBadRequestQuery() {
     doThrow(new BadUserRequestException("process instance ids are empty"))
       .when(runtimeServiceMock).deleteProcessInstancesAsync(eq(null), eq(null), any(), anyString(), anyBoolean(), anyBoolean(), anyBoolean());
 
@@ -458,7 +460,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteAsyncWithSkipCustomListeners() {
+  void testDeleteAsyncWithSkipCustomListeners() {
     when(runtimeServiceMock.deleteProcessInstancesAsync(any(), any(), any(), anyString(), anyBoolean(), anyBoolean(), anyBoolean())).thenReturn(new BatchEntity());
 
     Map<String, Object> messageBodyJson = new HashMap<>();
@@ -484,7 +486,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteAsyncWithSkipSubprocesses() {
+  void testDeleteAsyncWithSkipSubprocesses() {
     when(runtimeServiceMock.deleteProcessInstancesAsync(any(), any(), any(), anyString(), anyBoolean(), anyBoolean(), anyBoolean())).thenReturn(new BatchEntity());
 
     Map<String, Object> messageBodyJson = new HashMap<>();
@@ -510,7 +512,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteAsyncHistoricQueryBasedWithQuery() {
+  void testDeleteAsyncHistoricQueryBasedWithQuery() {
     when(runtimeServiceMock.deleteProcessInstancesAsync(
       any(),
       eq((ProcessInstanceQuery)null),
@@ -547,7 +549,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteAsyncHistoricQueryBasedWithProcessInstanceIds() {
+  void testDeleteAsyncHistoricQueryBasedWithProcessInstanceIds() {
     when(runtimeServiceMock.deleteProcessInstancesAsync(
       any(),
       eq((ProcessInstanceQuery)null),
@@ -581,7 +583,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteAsyncHistoricQueryBasedWithQueryAndProcessInstanceIds() {
+  void testDeleteAsyncHistoricQueryBasedWithQueryAndProcessInstanceIds() {
     when(runtimeServiceMock.deleteProcessInstancesAsync(
       any(),
       eq((ProcessInstanceQuery)null),
@@ -619,7 +621,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteAsyncHistoricQueryBasedWithoutQueryAndWithoutProcessInstanceIds() {
+  void testDeleteAsyncHistoricQueryBasedWithoutQueryAndWithoutProcessInstanceIds() {
     doThrow(new BadUserRequestException("processInstanceIds is empty"))
       .when(runtimeServiceMock).deleteProcessInstancesAsync(
         eq((List<String>)null),
@@ -649,7 +651,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteAsyncHistoricQueryBasedWithDeleteReason() {
+  void testDeleteAsyncHistoricQueryBasedWithDeleteReason() {
     when(runtimeServiceMock.deleteProcessInstancesAsync(
       any(),
       any(),
@@ -683,7 +685,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteAsyncHistoricQueryBasedWithSkipCustomListenerTrue() {
+  void testDeleteAsyncHistoricQueryBasedWithSkipCustomListenerTrue() {
     when(runtimeServiceMock.deleteProcessInstancesAsync(
       eq((List<String>)null),
       eq((ProcessInstanceQuery)null),
@@ -717,7 +719,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteAsyncHistoricQueryBasedWithSkipSubprocesses() {
+  void testDeleteAsyncHistoricQueryBasedWithSkipSubprocesses() {
     when(runtimeServiceMock.deleteProcessInstancesAsync(
       eq((List<String>)null),
       eq((ProcessInstanceQuery)null),
@@ -751,7 +753,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteAsyncHistoricQueryBasedWithSkipIoMappingsTrue() {
+  void testDeleteAsyncHistoricQueryBasedWithSkipIoMappingsTrue() {
     when(runtimeServiceMock.deleteProcessInstancesAsync(
         eq(null),
         eq(null),
@@ -775,7 +777,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteAsyncHistoricQueryBasedWithSkipIoMappingsFalse() {
+  void testDeleteAsyncHistoricQueryBasedWithSkipIoMappingsFalse() {
     when(runtimeServiceMock.deleteProcessInstancesAsync(
         eq(null),
         eq(null),
@@ -800,7 +802,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetVariablesWithNullValue() {
+  void testGetVariablesWithNullValue() {
     Response response = given().pathParam("id", EXAMPLE_PROCESS_INSTANCE_ID_WITH_NULL_VALUE_AS_VARIABLE)
       .then().expect().statusCode(Status.OK.getStatusCode())
       .body(EXAMPLE_ANOTHER_VARIABLE_KEY, Matchers.notNullValue())
@@ -808,11 +810,11 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
       .body(EXAMPLE_ANOTHER_VARIABLE_KEY + ".type", Matchers.equalTo("Null"))
       .when().get(PROCESS_INSTANCE_VARIABLES_URL);
 
-    Assert.assertEquals("Should return exactly one variable", 1, response.jsonPath().getMap("").size());
+    Assertions.assertEquals(1, response.jsonPath().getMap("").size(), "Should return exactly one variable");
   }
 
   @Test
-  public void testGetProcessInstanceComments() {
+  void testGetProcessInstanceComments() {
     mockHistoryFull();
 
     Response response = given()
@@ -830,7 +832,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetProcessInstanceCommentsWithHistoryDisabled() {
+  void testGetProcessInstanceCommentsWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -845,7 +847,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteInstanceCommentThrowsAuthorizationException() {
+  void testDeleteInstanceCommentThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(taskServiceMock)
         .deleteProcessInstanceComment(EXAMPLE_PROCESS_INSTANCE_ID, EXAMPLE_PROCESS_INSTANCE_COMMENT_ID);
@@ -861,7 +863,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteInstanceComment() {
+  void testDeleteInstanceComment() {
     mockHistoryFull();
 
     given().pathParam("id", EXAMPLE_PROCESS_INSTANCE_ID)
@@ -877,7 +879,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteInstanceCommentWithHistoryDisabled() {
+  void testDeleteInstanceCommentWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given().pathParam("id", EXAMPLE_PROCESS_INSTANCE_ID)
@@ -892,7 +894,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteInstanceCommentForNonExistingCommentId() {
+  void testDeleteInstanceCommentForNonExistingCommentId() {
     mockHistoryFull();
     doThrow(new NullValueException()).when(taskServiceMock)
         .deleteProcessInstanceComment(EXAMPLE_PROCESS_INSTANCE_ID, NON_EXISTING_ID);
@@ -909,7 +911,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteInstanceCommentForNonExistingCommentIdWithHistoryDisabled() {
+  void testDeleteInstanceCommentForNonExistingCommentIdWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given().pathParam("id", EXAMPLE_PROCESS_INSTANCE_ID)
@@ -924,7 +926,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteInstanceCommentForNonExistingProcessInstance() {
+  void testDeleteInstanceCommentForNonExistingProcessInstance() {
     mockHistoryFull();
     historicProcessInstanceQueryMock = mock(HistoricProcessInstanceQuery.class);
     when(historyServiceMock.createHistoricProcessInstanceQuery()).thenReturn(historicProcessInstanceQueryMock);
@@ -944,7 +946,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteInstanceCommentForNonExistingWithHistoryDisabled() {
+  void testDeleteInstanceCommentForNonExistingWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given().pathParam("id", NON_EXISTING_ID)
@@ -959,7 +961,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteProcessInstanceCommentsThrowsAuthorizationException() {
+  void testDeleteProcessInstanceCommentsThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(taskServiceMock)
         .deleteProcessInstanceComments(MockProvider.EXAMPLE_TASK_ID);
@@ -974,7 +976,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteProcessInstanceComments() {
+  void testDeleteProcessInstanceComments() {
     mockHistoryFull();
     given().pathParam("id", EXAMPLE_PROCESS_INSTANCE_ID)
         .header("accept", MediaType.APPLICATION_JSON)
@@ -988,7 +990,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteProcessInstanceCommentsWithHistoryDisabled() {
+  void testDeleteProcessInstanceCommentsWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given().pathParam("id", EXAMPLE_PROCESS_INSTANCE_ID)
@@ -1002,7 +1004,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteProcessInstanceCommentsForNonExisting() {
+  void testDeleteProcessInstanceCommentsForNonExisting() {
     mockHistoryFull();
     historicProcessInstanceQueryMock = mock(HistoricProcessInstanceQuery.class);
     when(historyServiceMock.createHistoricProcessInstanceQuery()).thenReturn(historicProcessInstanceQueryMock);
@@ -1021,7 +1023,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteProcessInstanceCommentsForNonExistingWithHistoryDisabled() {
+  void testDeleteProcessInstanceCommentsForNonExistingWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given().pathParam("id", NON_EXISTING_ID)
@@ -1035,7 +1037,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testUpdateProcessInstanceCommentCommentIdNull() {
+  void testUpdateProcessInstanceCommentCommentIdNull() {
     mockHistoryFull();
 
     String message = "expected exception";
@@ -1058,7 +1060,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testUpdateProcessInstanceCommentMessageIsNull() {
+  void testUpdateProcessInstanceCommentMessageIsNull() {
     mockHistoryFull();
 
     String message = "expected exception";
@@ -1081,7 +1083,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testUpdateProcessInstanceComment() {
+  void testUpdateProcessInstanceComment() {
     mockHistoryFull();
     Map<String, Object> json = new HashMap<>();
 
@@ -1102,7 +1104,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testUpdateProcessInstanceCommentExtraProperties() {
+  void testUpdateProcessInstanceCommentExtraProperties() {
     mockHistoryFull();
 
     Map<String, Object> json = new HashMap<>();
@@ -1128,7 +1130,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testUpdateProcessInstanceCommentProcessInstanceIdNotFound() {
+  void testUpdateProcessInstanceCommentProcessInstanceIdNotFound() {
     mockHistoryFull();
     historicProcessInstanceQueryMock = mock(HistoricProcessInstanceQuery.class);
     when(historyServiceMock.createHistoricProcessInstanceQuery()).thenReturn(historicProcessInstanceQueryMock);
@@ -1155,7 +1157,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testUpdateProcessInstanceCommentThrowsAuthorizationException() {
+  void testUpdateProcessInstanceCommentThrowsAuthorizationException() {
     mockHistoryFull();
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(taskServiceMock)
@@ -1179,7 +1181,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetFileVariable() {
+  void testGetFileVariable() {
     String variableKey = "aVariableKey";
     final byte[] byteContent = "some bytes".getBytes();
     String filename = "test.txt";
@@ -1203,7 +1205,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetNullFileVariable() {
+  void testGetNullFileVariable() {
     String variableKey = "aVariableKey";
     String filename = "test.txt";
     String mimeType = "text/plain";
@@ -1224,7 +1226,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetFileVariableDownloadWithType() {
+  void testGetFileVariableDownloadWithType() {
     String variableKey = "aVariableKey";
     final byte[] byteContent = "some bytes".getBytes();
     String filename = "test.txt";
@@ -1245,7 +1247,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetFileVariableDownloadWithTypeAndEncoding() {
+  void testGetFileVariableDownloadWithTypeAndEncoding() {
     String variableKey = "aVariableKey";
     final byte[] byteContent = "some bytes".getBytes();
     String filename = "test.txt";
@@ -1268,7 +1270,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetFileVariableDownloadWithoutType() {
+  void testGetFileVariableDownloadWithoutType() {
     String variableKey = "aVariableKey";
     final byte[] byteContent = "some bytes".getBytes();
     String filename = "test.txt";
@@ -1290,7 +1292,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testCannotDownloadVariableOtherThanFile() {
+  void testCannotDownloadVariableOtherThanFile() {
     String variableKey = "aVariableKey";
     LongValue variableValue = Variables.longValue(123L);
 
@@ -1308,7 +1310,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testJavaObjectVariableSerialization() {
+  void testJavaObjectVariableSerialization() {
     Response response = given().pathParam("id", MockProvider.ANOTHER_EXAMPLE_PROCESS_INSTANCE_ID)
       .then().expect().statusCode(Status.OK.getStatusCode())
       .body(EXAMPLE_VARIABLE_KEY, Matchers.notNullValue())
@@ -1319,11 +1321,11 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
       .body(EXAMPLE_VARIABLE_KEY + ".valueInfo." + SerializableValueType.VALUE_INFO_SERIALIZATION_DATA_FORMAT, Matchers.equalTo("application/json"))
       .when().get(PROCESS_INSTANCE_VARIABLES_URL);
 
-    Assert.assertEquals("Should return exactly one variable", 1, response.jsonPath().getMap("").size());
+    Assertions.assertEquals(1, response.jsonPath().getMap("").size(), "Should return exactly one variable");
   }
 
   @Test
-  public void testGetObjectVariables() {
+  void testGetObjectVariables() {
     // given
     String variableKey = "aVariableId";
 
@@ -1354,7 +1356,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetObjectVariablesSerialized() {
+  void testGetObjectVariablesSerialized() {
     // given
     String variableKey = "aVariableId";
 
@@ -1384,7 +1386,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetVariablesForNonExistingProcessInstance() {
+  void testGetVariablesForNonExistingProcessInstance() {
     when(runtimeServiceMock.getVariablesTyped(anyString(), anyBoolean())).thenThrow(new ProcessEngineException("expected exception"));
 
     given().pathParam("id", "aNonExistingProcessInstanceId")
@@ -1395,7 +1397,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetVariablesThrowsAuthorizationException() {
+  void testGetVariablesThrowsAuthorizationException() {
     String message = "expected exception";
     when(runtimeServiceMock.getVariablesTyped(anyString(), anyBoolean())).thenThrow(new AuthorizationException(message));
 
@@ -1411,7 +1413,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetSingleInstance() {
+  void testGetSingleInstance() {
     ProcessInstance mockInstance = MockProvider.createMockInstance();
     ProcessInstanceQuery sampleInstanceQuery = mock(ProcessInstanceQuery.class);
     when(runtimeServiceMock.createProcessInstanceQuery()).thenReturn(sampleInstanceQuery);
@@ -1431,7 +1433,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetNonExistingProcessInstance() {
+  void testGetNonExistingProcessInstance() {
     ProcessInstanceQuery sampleInstanceQuery = mock(ProcessInstanceQuery.class);
     when(runtimeServiceMock.createProcessInstanceQuery()).thenReturn(sampleInstanceQuery);
     when(sampleInstanceQuery.processInstanceId(anyString())).thenReturn(sampleInstanceQuery);
@@ -1445,7 +1447,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteProcessInstance() {
+  void testDeleteProcessInstance() {
     given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID)
       .then().expect().statusCode(Status.NO_CONTENT.getStatusCode())
       .when().delete(SINGLE_PROCESS_INSTANCE_URL);
@@ -1454,7 +1456,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteNonExistingProcessInstance() {
+  void testDeleteNonExistingProcessInstance() {
     doThrow(new NotFoundException()).when(runtimeServiceMock).deleteProcessInstance(any(), any(), anyBoolean(), anyBoolean(), anyBoolean() ,anyBoolean());
 
     given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID)
@@ -1464,7 +1466,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteNonExistingProcessInstanceIfExists() {
+  void testDeleteNonExistingProcessInstanceIfExists() {
     given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID).queryParam("failIfNotExists", false)
     .then().expect().statusCode(Status.NO_CONTENT.getStatusCode())
     .when().delete(SINGLE_PROCESS_INSTANCE_URL);
@@ -1473,7 +1475,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteProcessInstanceThrowsAuthorizationException() {
+  void testDeleteProcessInstanceThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(runtimeServiceMock).deleteProcessInstance(any(), any(), anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean());
 
@@ -1489,7 +1491,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testNoGivenDeleteReason1() {
+  void testNoGivenDeleteReason1() {
     given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID)
       .then().expect().statusCode(Status.NO_CONTENT.getStatusCode())
       .when().delete(SINGLE_PROCESS_INSTANCE_URL);
@@ -1498,7 +1500,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteProcessInstanceSkipCustomListeners() {
+  void testDeleteProcessInstanceSkipCustomListeners() {
     given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID).queryParams("skipCustomListeners", true).then().expect()
         .statusCode(Status.NO_CONTENT.getStatusCode()).when().delete(SINGLE_PROCESS_INSTANCE_URL);
 
@@ -1506,7 +1508,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteProcessInstanceWithCustomListeners() {
+  void testDeleteProcessInstanceWithCustomListeners() {
     given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID).queryParams("skipCustomListeners", false).then().expect()
         .statusCode(Status.NO_CONTENT.getStatusCode()).when().delete(SINGLE_PROCESS_INSTANCE_URL);
 
@@ -1514,7 +1516,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteProcessInstanceSkipIoMappings() {
+  void testDeleteProcessInstanceSkipIoMappings() {
     given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID).queryParams("skipIoMappings", true).then().expect()
         .statusCode(Status.NO_CONTENT.getStatusCode()).when().delete(SINGLE_PROCESS_INSTANCE_URL);
 
@@ -1522,7 +1524,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteProcessInstanceWithoutSkipingIoMappings() {
+  void testDeleteProcessInstanceWithoutSkipingIoMappings() {
     given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID).queryParams("skipIoMappings", false).then().expect()
         .statusCode(Status.NO_CONTENT.getStatusCode()).when().delete(SINGLE_PROCESS_INSTANCE_URL);
 
@@ -1530,7 +1532,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteProcessInstanceSkipSubprocesses() {
+  void testDeleteProcessInstanceSkipSubprocesses() {
     given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID).queryParams("skipSubprocesses", true).then().expect()
         .statusCode(Status.NO_CONTENT.getStatusCode()).when().delete(SINGLE_PROCESS_INSTANCE_URL);
 
@@ -1538,7 +1540,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteProcessInstanceWithoutSkipSubprocesses() {
+  void testDeleteProcessInstanceWithoutSkipSubprocesses() {
     given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID).queryParams("skipSubprocesses", false).then().expect()
         .statusCode(Status.NO_CONTENT.getStatusCode()).when().delete(SINGLE_PROCESS_INSTANCE_URL);
 
@@ -1546,7 +1548,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testVariableModification() {
+  void testVariableModification() {
     String variableKey = "aKey";
     int variableValue = 123;
 
@@ -1570,7 +1572,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testVariableModificationWithUnparseableInteger() {
+  void testVariableModificationWithUnparseableInteger() {
     String variableKey = "aKey";
     String variableValue = "1abc";
     String variableType = "Integer";
@@ -1589,7 +1591,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testVariableModificationWithUnparseableShort() {
+  void testVariableModificationWithUnparseableShort() {
     String variableKey = "aKey";
     String variableValue = "1abc";
     String variableType = "Short";
@@ -1608,7 +1610,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testVariableModificationWithUnparseableLong() {
+  void testVariableModificationWithUnparseableLong() {
     String variableKey = "aKey";
     String variableValue = "1abc";
     String variableType = "Long";
@@ -1627,7 +1629,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testVariableModificationWithUnparseableDouble() {
+  void testVariableModificationWithUnparseableDouble() {
     String variableKey = "aKey";
     String variableValue = "1abc";
     String variableType = "Double";
@@ -1646,7 +1648,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testVariableModificationWithUnparseableDate() {
+  void testVariableModificationWithUnparseableDate() {
     String variableKey = "aKey";
     String variableValue = "1abc";
     String variableType = "Date";
@@ -1665,7 +1667,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testVariableModificationWithNotSupportedType() {
+  void testVariableModificationWithNotSupportedType() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "X";
@@ -1683,7 +1685,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testVariableModificationForNonExistingProcessInstance() {
+  void testVariableModificationForNonExistingProcessInstance() {
     doThrow(new ProcessEngineException("expected exception")).when(runtimeServiceMock).updateVariables(any(), any(), any());
 
     String variableKey = "aKey";
@@ -1703,14 +1705,14 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testEmptyVariableModification() {
+  void testEmptyVariableModification() {
     given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID).contentType(ContentType.JSON).body(EMPTY_JSON_OBJECT)
       .then().expect().statusCode(Status.NO_CONTENT.getStatusCode())
       .when().post(PROCESS_INSTANCE_VARIABLES_URL);
   }
 
   @Test
-  public void testVariableModificationThrowsAuthorizationException() {
+  void testVariableModificationThrowsAuthorizationException() {
     String variableKey = "aKey";
     int variableValue = 123;
     Map<String, Object> messageBodyJson = new HashMap<>();
@@ -1733,7 +1735,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetSingleVariable() {
+  void testGetSingleVariable() {
     String variableKey = "aVariableKey";
     int variableValue = 123;
 
@@ -1748,7 +1750,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testNonExistingVariable() {
+  void testNonExistingVariable() {
     String variableKey = "aVariableKey";
 
     when(runtimeServiceMock.getVariableTyped(eq(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID), eq(variableKey), anyBoolean())).thenReturn(null);
@@ -1761,7 +1763,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetSingleVariableThrowsAuthorizationException() {
+  void testGetSingleVariableThrowsAuthorizationException() {
     String variableKey = "aVariableKey";
 
     String message = "excpected exception";
@@ -1779,7 +1781,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetSingleLocalVariableData() {
+  void testGetSingleLocalVariableData() {
 
     when(runtimeServiceMock.getVariableTyped(anyString(), eq(EXAMPLE_BYTES_VARIABLE_KEY), eq(false))).thenReturn(EXAMPLE_VARIABLE_VALUE_BYTES);
 
@@ -1797,7 +1799,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetSingleLocalVariableDataNonExisting() {
+  void testGetSingleLocalVariableDataNonExisting() {
 
     when(runtimeServiceMock.getVariableTyped(anyString(), eq("nonExisting"), eq(false))).thenReturn(null);
 
@@ -1816,7 +1818,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetSingleLocalVariabledataNotBinary() {
+  void testGetSingleLocalVariabledataNotBinary() {
 
     when(runtimeServiceMock.getVariableTyped(anyString(), eq(EXAMPLE_VARIABLE_KEY), eq(false))).thenReturn(EXAMPLE_VARIABLE_VALUE);
 
@@ -1833,7 +1835,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetSingleLocalObjectVariable() {
+  void testGetSingleLocalObjectVariable() {
     // given
     String variableKey = "aVariableId";
 
@@ -1863,7 +1865,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetSingleLocalObjectVariableSerialized() {
+  void testGetSingleLocalObjectVariableSerialized() {
     // given
     String variableKey = "aVariableId";
 
@@ -1893,7 +1895,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testGetVariableForNonExistingInstance() {
+  void testGetVariableForNonExistingInstance() {
     String variableKey = "aVariableKey";
 
     when(runtimeServiceMock.getVariableTyped(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID, variableKey, true))
@@ -1907,7 +1909,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariable() {
+  void testPutSingleVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "aVariableValue";
 
@@ -1923,7 +1925,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableWithTypeString() {
+  void testPutSingleVariableWithTypeString() {
     String variableKey = "aVariableKey";
     String variableValue = "aVariableValue";
     String type = "String";
@@ -1940,7 +1942,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableWithTypeInteger() {
+  void testPutSingleVariableWithTypeInteger() {
     String variableKey = "aVariableKey";
     Integer variableValue = 123;
     String type = "Integer";
@@ -1957,7 +1959,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableWithUnparseableInteger() {
+  void testPutSingleVariableWithUnparseableInteger() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String type = "Integer";
@@ -1974,7 +1976,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableWithTypeShort() {
+  void testPutSingleVariableWithTypeShort() {
     String variableKey = "aVariableKey";
     Short variableValue = 123;
     String type = "Short";
@@ -1991,7 +1993,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableWithUnparseableShort() {
+  void testPutSingleVariableWithUnparseableShort() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String type = "Short";
@@ -2008,7 +2010,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableWithTypeLong() {
+  void testPutSingleVariableWithTypeLong() {
     String variableKey = "aVariableKey";
     Long variableValue = 123L;
     String type = "Long";
@@ -2025,7 +2027,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableWithUnparseableLong() {
+  void testPutSingleVariableWithUnparseableLong() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String type = "Long";
@@ -2042,7 +2044,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableWithTypeDouble() {
+  void testPutSingleVariableWithTypeDouble() {
     String variableKey = "aVariableKey";
     Double variableValue = 123.456;
     String type = "Double";
@@ -2059,7 +2061,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableWithUnparseableDouble() {
+  void testPutSingleVariableWithUnparseableDouble() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String type = "Double";
@@ -2076,7 +2078,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableWithTypeBoolean() {
+  void testPutSingleVariableWithTypeBoolean() {
     String variableKey = "aVariableKey";
     Boolean variableValue = true;
     String type = "Boolean";
@@ -2093,7 +2095,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableWithTypeDate() throws Exception {
+  void testPutSingleVariableWithTypeDate() throws Exception {
     Date now = new Date();
 
     String variableKey = "aVariableKey";
@@ -2114,7 +2116,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableWithUnparseableDate() {
+  void testPutSingleVariableWithUnparseableDate() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String type = "Date";
@@ -2131,7 +2133,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableWithNotSupportedType() {
+  void testPutSingleVariableWithNotSupportedType() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String type = "X";
@@ -2147,7 +2149,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableThrowsAuthorizationException() {
+  void testPutSingleVariableThrowsAuthorizationException() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String type = "String";
@@ -2170,7 +2172,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleBinaryVariable() {
+  void testPutSingleBinaryVariable() {
     byte[] bytes = "someContent".getBytes();
 
     String variableKey = "aVariableKey";
@@ -2188,7 +2190,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleBinaryVariableWithValueType() {
+  void testPutSingleBinaryVariableWithValueType() {
     byte[] bytes = "someContent".getBytes();
 
     String variableKey = "aVariableKey";
@@ -2207,7 +2209,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleBinaryVariableWithNoValue() {
+  void testPutSingleBinaryVariableWithNoValue() {
     byte[] bytes = new byte[0];
 
     String variableKey = "aVariableKey";
@@ -2225,7 +2227,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleBinaryVariableThrowsAuthorizationException() {
+  void testPutSingleBinaryVariableThrowsAuthorizationException() {
     byte[] bytes = "someContent".getBytes();
     String variableKey = "aVariableKey";
 
@@ -2246,7 +2248,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleSerializableVariable() throws Exception {
+  void testPutSingleSerializableVariable() throws Exception {
 
     ArrayList<String> serializable = new ArrayList<>();
     serializable.add("foo");
@@ -2271,7 +2273,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleSerializableVariableUnsupportedMediaType() throws Exception {
+  void testPutSingleSerializableVariableUnsupportedMediaType() throws Exception {
 
     ArrayList<String> serializable = new ArrayList<>();
     serializable.add("foo");
@@ -2297,7 +2299,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableFromSerialized() {
+  void testPutSingleVariableFromSerialized() {
     String serializedValue = "{\"prop\" : \"value\"}";
     Map<String, Object> requestJson = VariablesBuilder
         .getObjectValueMap(serializedValue, ValueType.OBJECT.getName(), "aDataFormat", "aRootType");
@@ -2322,7 +2324,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableFromInvalidSerialized() {
+  void testPutSingleVariableFromInvalidSerialized() {
     String serializedValue = "{\"prop\" : \"value\"}";
 
     Map<String, Object> requestJson = VariablesBuilder
@@ -2343,7 +2345,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableFromSerializedWithNoValue() {
+  void testPutSingleVariableFromSerializedWithNoValue() {
     String variableKey = "aVariableKey";
     Map<String, Object> requestJson = VariablesBuilder
         .getObjectValueMap(null, ValueType.OBJECT.getName(), null, null);
@@ -2359,7 +2361,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutSingleVariableWithNoValue() {
+  void testPutSingleVariableWithNoValue() {
     String variableKey = "aVariableKey";
 
     given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID).pathParam("varId", variableKey)
@@ -2372,7 +2374,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPutVariableForNonExistingInstance() {
+  void testPutVariableForNonExistingInstance() {
     String variableKey = "aVariableKey";
     String variableValue = "aVariableValue";
 
@@ -2391,7 +2393,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldReturnErrorOnSettingVariable() {
+  void shouldReturnErrorOnSettingVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "aVariableValue";
 
@@ -2411,7 +2413,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPostSingleFileVariableWithEncodingAndMimeType() {
+  void testPostSingleFileVariableWithEncodingAndMimeType() {
 
     byte[] value = "some text".getBytes();
     String variableKey = "aVariableKey";
@@ -2440,7 +2442,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPostSingleFileVariableWithMimeType() {
+  void testPostSingleFileVariableWithMimeType() {
 
     byte[] value = "some text".getBytes();
     String variableKey = "aVariableKey";
@@ -2468,7 +2470,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPostSingleFileVariableWithEncoding() {
+  void testPostSingleFileVariableWithEncoding() {
 
     byte[] value = "some text".getBytes();
     String variableKey = "aVariableKey";
@@ -2488,7 +2490,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testPostSingleFileVariableOnlyFilename() throws Exception {
+  void testPostSingleFileVariableOnlyFilename() throws Exception {
 
     String variableKey = "aVariableKey";
     String filename = "test.txt";
@@ -2514,7 +2516,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteSingleVariable() {
+  void testDeleteSingleVariable() {
     String variableKey = "aVariableKey";
 
     given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID).pathParam("varId", variableKey)
@@ -2525,7 +2527,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteVariableForNonExistingInstance() {
+  void testDeleteVariableForNonExistingInstance() {
     String variableKey = "aVariableKey";
 
     doThrow(new ProcessEngineException("expected exception"))
@@ -2539,7 +2541,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testDeleteVariableThrowsAuthorizationException() {
+  void testDeleteVariableThrowsAuthorizationException() {
     String variableKey = "aVariableKey";
 
     String message = "expected exception";
@@ -2558,7 +2560,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testActivateInstance() {
+  void testActivateInstance() {
     ProcessInstanceSuspensionStateDto dto = new ProcessInstanceSuspensionStateDto();
     dto.setSuspended(false);
 
@@ -2577,7 +2579,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testActivateThrowsProcessEngineException() {
+  void testActivateThrowsProcessEngineException() {
     ProcessInstanceSuspensionStateDto dto = new ProcessInstanceSuspensionStateDto();
     dto.setSuspended(false);
 
@@ -2601,7 +2603,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testActivateThrowsAuthorizationException() {
+  void testActivateThrowsAuthorizationException() {
     ProcessInstanceSuspensionStateDto dto = new ProcessInstanceSuspensionStateDto();
     dto.setSuspended(false);
 
@@ -2625,7 +2627,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendInstance() {
+  void testSuspendInstance() {
     ProcessInstanceSuspensionStateDto dto = new ProcessInstanceSuspensionStateDto();
     dto.setSuspended(true);
 
@@ -2644,7 +2646,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendThrowsProcessEngineException() {
+  void testSuspendThrowsProcessEngineException() {
     ProcessInstanceSuspensionStateDto dto = new ProcessInstanceSuspensionStateDto();
     dto.setSuspended(true);
 
@@ -2668,7 +2670,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendThrowsAuthorizationException() {
+  void testSuspendThrowsAuthorizationException() {
     ProcessInstanceSuspensionStateDto dto = new ProcessInstanceSuspensionStateDto();
     dto.setSuspended(true);
 
@@ -2692,7 +2694,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testActivateProcessInstanceByProcessDefinitionKey() {
+  void testActivateProcessInstanceByProcessDefinitionKey() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", false);
     params.put("processDefinitionKey", MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY);
@@ -2711,7 +2713,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testActivateProcessInstanceByProcessDefinitionKeyWithException() {
+  void testActivateProcessInstanceByProcessDefinitionKeyWithException() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", false);
     params.put("processDefinitionKey", MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY);
@@ -2734,7 +2736,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testActivateProcessInstanceByProcessDefinitionKeyThrowsAuthorizationException() {
+  void testActivateProcessInstanceByProcessDefinitionKeyThrowsAuthorizationException() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", false);
     params.put("processDefinitionKey", MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY);
@@ -2758,7 +2760,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendProcessInstanceByProcessDefinitionKey() {
+  void testSuspendProcessInstanceByProcessDefinitionKey() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", true);
     params.put("processDefinitionKey", MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY);
@@ -2777,7 +2779,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendProcessInstanceByProcessDefinitionKeyWithException() {
+  void testSuspendProcessInstanceByProcessDefinitionKeyWithException() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", true);
     params.put("processDefinitionKey", MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY);
@@ -2800,7 +2802,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendProcessInstanceByProcessDefinitionKeyThrowsAuthorizationException() {
+  void testSuspendProcessInstanceByProcessDefinitionKeyThrowsAuthorizationException() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", true);
     params.put("processDefinitionKey", MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY);
@@ -2824,7 +2826,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testActivateProcessInstanceByProcessDefinitionKeyAndTenantId() {
+  void testActivateProcessInstanceByProcessDefinitionKeyAndTenantId() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", false);
     params.put("processDefinitionKey", MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY);
@@ -2845,7 +2847,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testActivateProcessInstanceByProcessDefinitionKeyWithoutTenantId() {
+  void testActivateProcessInstanceByProcessDefinitionKeyWithoutTenantId() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", false);
     params.put("processDefinitionKey", MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY);
@@ -2866,7 +2868,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendProcessInstanceByProcessDefinitionKeyAndTenantId() {
+  void testSuspendProcessInstanceByProcessDefinitionKeyAndTenantId() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", true);
     params.put("processDefinitionKey", MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY);
@@ -2887,7 +2889,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendProcessInstanceByProcessDefinitionKeyWithoutTenantId() {
+  void testSuspendProcessInstanceByProcessDefinitionKeyWithoutTenantId() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", true);
     params.put("processDefinitionKey", MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY);
@@ -2908,7 +2910,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testActivateProcessInstanceByProcessDefinitionId() {
+  void testActivateProcessInstanceByProcessDefinitionId() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", false);
     params.put("processDefinitionId", MockProvider.EXAMPLE_PROCESS_DEFINITION_ID);
@@ -2927,7 +2929,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testActivateProcessInstanceByProcessDefinitionIdWithException() {
+  void testActivateProcessInstanceByProcessDefinitionIdWithException() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", false);
     params.put("processDefinitionId", MockProvider.EXAMPLE_PROCESS_DEFINITION_ID);
@@ -2950,7 +2952,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testActivateProcessInstanceByProcessDefinitionIdThrowsAuthorizationException() {
+  void testActivateProcessInstanceByProcessDefinitionIdThrowsAuthorizationException() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", false);
     params.put("processDefinitionId", MockProvider.EXAMPLE_PROCESS_DEFINITION_ID);
@@ -2974,7 +2976,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendProcessInstanceByProcessDefinitionId() {
+  void testSuspendProcessInstanceByProcessDefinitionId() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", true);
     params.put("processDefinitionId", MockProvider.EXAMPLE_PROCESS_DEFINITION_ID);
@@ -2993,7 +2995,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendProcessInstanceByProcessDefinitionIdWithException() {
+  void testSuspendProcessInstanceByProcessDefinitionIdWithException() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", true);
     params.put("processDefinitionId", MockProvider.EXAMPLE_PROCESS_DEFINITION_ID);
@@ -3016,7 +3018,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendProcessInstanceByProcessDefinitionIdThrowsAuthorizationException() {
+  void testSuspendProcessInstanceByProcessDefinitionIdThrowsAuthorizationException() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", true);
     params.put("processDefinitionId", MockProvider.EXAMPLE_PROCESS_DEFINITION_ID);
@@ -3040,7 +3042,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testActivateProcessInstanceByIdShouldThrowException() {
+  void testActivateProcessInstanceByIdShouldThrowException() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", false);
     params.put("processInstanceId", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
@@ -3060,7 +3062,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendProcessInstanceByIdShouldThrowException() {
+  void testSuspendProcessInstanceByIdShouldThrowException() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", true);
     params.put("processInstanceId", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
@@ -3080,7 +3082,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendWithMultipleByParameters() {
+  void testSuspendWithMultipleByParameters() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", true);
     params.put("processDefinitionId", MockProvider.EXAMPLE_PROCESS_DEFINITION_ID);
@@ -3101,7 +3103,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendProcessInstanceByNothing() {
+  void testSuspendProcessInstanceByNothing() {
     Map<String, Object> params = new HashMap<>();
     params.put("suspended", true);
 
@@ -3121,7 +3123,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
 
 
   @Test
-  public void testSuspendInstances() {
+  void testSuspendInstances() {
     List<String> ids = Arrays.asList(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
     Map<String, Object> messageBodyJson = new HashMap<>();
     messageBodyJson.put("processInstanceIds", ids);
@@ -3141,7 +3143,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
 
 
   @Test
-  public void testActivateInstances() {
+  void testActivateInstances() {
     List<String> ids = Arrays.asList(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
     Map<String, Object> messageBodyJson = new HashMap<>();
     messageBodyJson.put("processInstanceIds", ids);
@@ -3161,7 +3163,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendInstancesMultipleGroupOperations() {
+  void testSuspendInstancesMultipleGroupOperations() {
     List<String> ids = Arrays.asList(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
     ProcessInstanceQueryDto query = new ProcessInstanceQueryDto();
     Map<String, Object> messageBodyJson = new HashMap<>();
@@ -3186,7 +3188,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
 
 
   @Test
-  public void testSuspendProcessInstanceQuery() {
+  void testSuspendProcessInstanceQuery() {
     ProcessInstanceQueryDto query = new ProcessInstanceQueryDto();
     Map<String, Object> messageBodyJson = new HashMap<>();
     messageBodyJson.put("processInstanceQuery", query);
@@ -3206,7 +3208,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
 
 
   @Test
-  public void testActivateProcessInstanceQuery() {
+  void testActivateProcessInstanceQuery() {
     ProcessInstanceQueryDto query = new ProcessInstanceQueryDto();
     Map<String, Object> messageBodyJson = new HashMap<>();
     messageBodyJson.put("processInstanceQuery", query);
@@ -3227,7 +3229,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
 
 
   @Test
-  public void testSuspendHistoricProcessInstanceQuery() {
+  void testSuspendHistoricProcessInstanceQuery() {
     HistoricProcessInstanceQueryDto query = new HistoricProcessInstanceQueryDto();
     Map<String, Object> messageBodyJson = new HashMap<>();
     messageBodyJson.put("historicProcessInstanceQuery", query);
@@ -3247,7 +3249,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
 
 
   @Test
-  public void testActivateHistoricProcessInstanceQuery() {
+  void testActivateHistoricProcessInstanceQuery() {
     HistoricProcessInstanceDto query = new HistoricProcessInstanceDto();
     Map<String, Object> messageBodyJson = new HashMap<>();
     messageBodyJson.put("historicProcessInstanceQuery", query);
@@ -3267,7 +3269,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendAsyncWithProcessInstances() {
+  void testSuspendAsyncWithProcessInstances() {
     Map<String, Object> messageBodyJson = new HashMap<>();
     List<String> ids = Arrays.asList(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
     messageBodyJson.put("processInstanceIds", ids);
@@ -3288,7 +3290,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testActivateAsyncWithProcessInstances() {
+  void testActivateAsyncWithProcessInstances() {
     Map<String, Object> messageBodyJson = new HashMap<>();
     List<String> ids = Arrays.asList(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
     messageBodyJson.put("processInstanceIds", ids);
@@ -3309,7 +3311,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendAsyncWithProcessInstanceQuery() {
+  void testSuspendAsyncWithProcessInstanceQuery() {
     ProcessInstanceQueryDto query = new ProcessInstanceQueryDto();
     Map<String, Object> messageBodyJson = new HashMap<>();
     messageBodyJson.put("processInstanceQuery", query);
@@ -3331,7 +3333,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testActivateAsyncWithProcessInstanceQuery() {
+  void testActivateAsyncWithProcessInstanceQuery() {
     ProcessInstanceQueryDto query = new ProcessInstanceQueryDto();
     Map<String, Object> messageBodyJson = new HashMap<>();
     messageBodyJson.put("processInstanceQuery", query);
@@ -3352,7 +3354,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendAsyncWithHistoricProcessInstanceQuery() {
+  void testSuspendAsyncWithHistoricProcessInstanceQuery() {
     Map<String, Object> messageBodyJson = new HashMap<>();
     List<String> ids = Arrays.asList(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
     messageBodyJson.put("processInstanceIds", ids);
@@ -3373,7 +3375,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testActivateAsyncWithHistoricProcessInstanceQuery() {
+  void testActivateAsyncWithHistoricProcessInstanceQuery() {
     Map<String, Object> messageBodyJson = new HashMap<>();
     List<String> ids = Arrays.asList(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
     messageBodyJson.put("processInstanceIds", ids);
@@ -3394,7 +3396,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSuspendAsyncWithMultipleGroupOperations() {
+  void testSuspendAsyncWithMultipleGroupOperations() {
     List<String> ids = Arrays.asList(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
     ProcessInstanceQueryDto query = new ProcessInstanceQueryDto();
     Map<String, Object> messageBodyJson = new HashMap<>();
@@ -3419,7 +3421,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
 
 
   @Test
-  public void testSuspendAsyncWithNothing() {
+  void testSuspendAsyncWithNothing() {
     Map<String, Object> messageBodyJson = new HashMap<>();
     messageBodyJson.put("suspended", true);
 
@@ -3439,7 +3441,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testProcessInstanceModification() {
+  void testProcessInstanceModification() {
     ProcessInstanceModificationInstantiationBuilder mockModificationBuilder = setUpMockModificationBuilder();
     when(runtimeServiceMock.createProcessInstanceModification(anyString())).thenReturn(mockModificationBuilder);
 
@@ -3493,7 +3495,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testProcessInstanceModificationWithVariables() {
+  void testProcessInstanceModificationWithVariables() {
     ProcessInstanceModificationInstantiationBuilder mockModificationBuilder = setUpMockModificationBuilder();
     when(runtimeServiceMock.createProcessInstanceModification(anyString())).thenReturn(mockModificationBuilder);
 
@@ -3549,7 +3551,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testInvalidModification() {
+  void testInvalidModification() {
     Map<String, Object> json = new HashMap<>();
 
     // start before: missing activity id
@@ -3643,7 +3645,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testModifyProcessInstanceThrowsAuthorizationException() {
+  void testModifyProcessInstanceThrowsAuthorizationException() {
     ProcessInstanceModificationInstantiationBuilder mockModificationBuilder = setUpMockModificationBuilder();
     when(runtimeServiceMock.createProcessInstanceModification(anyString())).thenReturn(mockModificationBuilder);
 
@@ -3687,7 +3689,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSyncProcessInstanceModificationWithAnnotation() {
+  void testSyncProcessInstanceModificationWithAnnotation() {
     ProcessInstanceModificationInstantiationBuilder mockModificationBuilder = setUpMockModificationBuilder();
     when(runtimeServiceMock.createProcessInstanceModification(anyString())).thenReturn(mockModificationBuilder);
 
@@ -3724,7 +3726,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessAsync() {
+  void testSetRetriesByProcessAsync() {
     List<String> ids = Arrays.asList(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
 
     Map<String, Object> messageBodyJson = new HashMap<>();
@@ -3749,7 +3751,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessAsyncWithDueDate() {
+  void testSetRetriesByProcessAsyncWithDueDate() {
     List<String> ids = Arrays.asList(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
 
     Map<String, Object> messageBodyJson = new HashMap<>();
@@ -3777,7 +3779,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessAsyncWithNullDueDate() {
+  void testSetRetriesByProcessAsyncWithNullDueDate() {
     List<String> ids = Arrays.asList(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID);
 
     Map<String, Object> messageBodyJson = new HashMap<>();
@@ -3804,7 +3806,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessAsyncWithQueryAndDueDate() {
+  void testSetRetriesByProcessAsyncWithQueryAndDueDate() {
     when(runtimeServiceMock.createProcessInstanceQuery()).thenReturn(new ProcessInstanceQueryImpl());
     Map<String, Object> messageBodyJson = new HashMap<>();
     messageBodyJson.put(RETRIES, MockProvider.EXAMPLE_JOB_RETRIES);
@@ -3830,7 +3832,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessAsyncWithQuery() {
+  void testSetRetriesByProcessAsyncWithQuery() {
     when(runtimeServiceMock.createProcessInstanceQuery()).thenReturn(new ProcessInstanceQueryImpl());
     Map<String, Object> messageBodyJson = new HashMap<>();
     messageBodyJson.put(RETRIES, MockProvider.EXAMPLE_JOB_RETRIES);
@@ -3855,7 +3857,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessWithBadRequestQuery() {
+  void testSetRetriesByProcessWithBadRequestQuery() {
     doThrow(new BadUserRequestException("job ids are empty"))
         .when(mockSetJobRetriesByProcessAsyncBuilder).executeAsync();
 
@@ -3876,7 +3878,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessWithoutRetries() {
+  void testSetRetriesByProcessWithoutRetries() {
     Map<String, Object> messageBodyJson = new HashMap<>();
     messageBodyJson.put("processInstances", null);
 
@@ -3889,7 +3891,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessWithNegativeRetries() {
+  void testSetRetriesByProcessWithNegativeRetries() {
     doThrow(new BadUserRequestException("retries are negative"))
         .when(mockManagementService).setJobRetriesByProcessAsync(MockProvider.EXAMPLE_NEGATIVE_JOB_RETRIES);
 
@@ -3911,7 +3913,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessAsyncHistoricQueryBasedWithQuery() {
+  void testSetRetriesByProcessAsyncHistoricQueryBasedWithQuery() {
     HistoricProcessInstanceQuery mockedHistoricProcessInstanceQuery = mock(HistoricProcessInstanceQuery.class);
     when(historyServiceMock.createHistoricProcessInstanceQuery()).thenReturn(mockedHistoricProcessInstanceQuery);
     List<HistoricProcessInstance> historicProcessInstances = MockProvider.createMockRunningHistoricProcessInstances();
@@ -3938,7 +3940,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessAsyncHistoricQueryBasedWithQueryAndDueDate() {
+  void testSetRetriesByProcessAsyncHistoricQueryBasedWithQueryAndDueDate() {
     HistoricProcessInstanceQuery mockedHistoricProcessInstanceQuery = mock(HistoricProcessInstanceQuery.class);
     when(historyServiceMock.createHistoricProcessInstanceQuery()).thenReturn(mockedHistoricProcessInstanceQuery);
     List<HistoricProcessInstance> historicProcessInstances = MockProvider.createMockRunningHistoricProcessInstances();
@@ -3969,7 +3971,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessAsyncHistoricQueryBasedWithQueryAndNullDueDate() {
+  void testSetRetriesByProcessAsyncHistoricQueryBasedWithQueryAndNullDueDate() {
     HistoricProcessInstanceQuery mockedHistoricProcessInstanceQuery = mock(HistoricProcessInstanceQuery.class);
     when(historyServiceMock.createHistoricProcessInstanceQuery()).thenReturn(mockedHistoricProcessInstanceQuery);
     List<HistoricProcessInstance> historicProcessInstances = MockProvider.createMockRunningHistoricProcessInstances();
@@ -3999,7 +4001,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessAsyncHistoricQueryBasedWithProcessInstanceIds() {
+  void testSetRetriesByProcessAsyncHistoricQueryBasedWithProcessInstanceIds() {
     Map<String, Object> messageBodyJson = new HashMap<>();
     messageBodyJson.put(RETRIES, MockProvider.EXAMPLE_JOB_RETRIES);
     messageBodyJson.put("processInstances", Arrays.asList(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID));
@@ -4018,7 +4020,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessAsyncHistoricQueryBasedWithProcessInstanceIdsAndDueDate() {
+  void testSetRetriesByProcessAsyncHistoricQueryBasedWithProcessInstanceIdsAndDueDate() {
     Map<String, Object> body = new HashMap<>();
     body.put(RETRIES, MockProvider.EXAMPLE_JOB_RETRIES);
     body.put("processInstances", Arrays.asList(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID));
@@ -4041,7 +4043,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessAsyncHistoricQueryBasedWithQueryAndProcessInstanceIds() {
+  void testSetRetriesByProcessAsyncHistoricQueryBasedWithQueryAndProcessInstanceIds() {
     HistoricProcessInstanceQuery mockedHistoricProcessInstanceQuery = mock(HistoricProcessInstanceQuery.class);
     when(historyServiceMock.createHistoricProcessInstanceQuery()).thenReturn(mockedHistoricProcessInstanceQuery);
     List<HistoricProcessInstance> historicProcessInstances = MockProvider.createMockRunningHistoricProcessInstances();
@@ -4066,7 +4068,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessAsyncHistoricQueryBasedWithBadRequestQuery() {
+  void testSetRetriesByProcessAsyncHistoricQueryBasedWithBadRequestQuery() {
     doThrow(new BadUserRequestException("jobIds is empty"))
       .when(mockSetJobRetriesByProcessAsyncBuilder).executeAsync();
 
@@ -4087,7 +4089,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSetRetriesByProcessAsyncHistoricQueryBasedWithNegativeRetries() {
+  void testSetRetriesByProcessAsyncHistoricQueryBasedWithNegativeRetries() {
     doThrow(new BadUserRequestException("retries are negative"))
       .when(mockManagementService).setJobRetriesByProcessAsync(MockProvider.EXAMPLE_NEGATIVE_JOB_RETRIES);
 
@@ -4111,7 +4113,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testProcessInstanceModificationAsync() {
+  void testProcessInstanceModificationAsync() {
     ProcessInstanceModificationInstantiationBuilder mockModificationBuilder = setUpMockModificationBuilder();
     when(runtimeServiceMock.createProcessInstanceModification(anyString())).thenReturn(mockModificationBuilder);
     Batch batchMock = createMockBatch();
@@ -4167,7 +4169,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testInvalidModificationAsync() {
+  void testInvalidModificationAsync() {
     Map<String, Object> json = new HashMap<>();
 
     // start before: missing activity id
@@ -4261,7 +4263,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testModifyProcessInstanceAsyncThrowsAuthorizationException() {
+  void testModifyProcessInstanceAsyncThrowsAuthorizationException() {
     ProcessInstanceModificationInstantiationBuilder mockModificationBuilder = setUpMockModificationBuilder();
     when(runtimeServiceMock.createProcessInstanceModification(anyString())).thenReturn(mockModificationBuilder);
 
@@ -4298,7 +4300,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
 
 
   @Test
-  public void testAsyncProcessInstanceModificationWithAnnotation() {
+  void testAsyncProcessInstanceModificationWithAnnotation() {
     ProcessInstanceModificationInstantiationBuilder mockModificationBuilder = setUpMockModificationBuilder();
     when(runtimeServiceMock.createProcessInstanceModification(anyString())).thenReturn(mockModificationBuilder);
     Batch batchMock = createMockBatch();
@@ -4334,7 +4336,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testSyncProcessInstanceModificationCancellationSource() {
+  void testSyncProcessInstanceModificationCancellationSource() {
     ProcessInstanceModificationInstantiationBuilder mockModificationBuilder = setUpMockModificationBuilder();
     when(runtimeServiceMock.createProcessInstanceModification(anyString())).thenReturn(mockModificationBuilder);
 
@@ -4357,7 +4359,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void testAsyncProcessInstanceModificationCancellationSource() {
+  void testAsyncProcessInstanceModificationCancellationSource() {
     ProcessInstanceModificationInstantiationBuilder mockModificationBuilder = setUpMockModificationBuilder();
     when(runtimeServiceMock.createProcessInstanceModification(anyString())).thenReturn(mockModificationBuilder);
     Batch batchMock = createMockBatch();
@@ -4382,7 +4384,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldSetVariablesAsync() {
+  void shouldSetVariablesAsync() {
     // given
     Batch batchMock = createMockBatch();
     when(runtimeServiceMock.setVariablesAsync(any(), any(), any(), any()))
@@ -4419,7 +4421,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldThrowExceptionWhenSetVariablesAsync_UnsupportedType() {
+  void shouldThrowExceptionWhenSetVariablesAsync_UnsupportedType() {
     // given
     Batch batchMock = createMockBatch();
     when(runtimeServiceMock.setVariablesAsync(any(), any(), any(), any()))
@@ -4450,7 +4452,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
    * or null value is given.
    */
   @Test
-  public void shouldTransformProcessEngineExceptionToInvalidRequestException() {
+  void shouldTransformProcessEngineExceptionToInvalidRequestException() {
     // given
     doThrow(new ProcessEngineException("message"))
         .when(runtimeServiceMock).setVariablesAsync(any(), any(), any(), any());
@@ -4468,7 +4470,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldThrowExceptionWhenSetVariablesAsync_AuthorizationException() {
+  void shouldThrowExceptionWhenSetVariablesAsync_AuthorizationException() {
     // given
     doThrow(new AuthorizationException("message"))
         .when(runtimeServiceMock).setVariablesAsync(any(), any(), any(), any());
@@ -4485,7 +4487,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldThrowExceptionWhenSetVariablesAsync_NullValueException() {
+  void shouldThrowExceptionWhenSetVariablesAsync_NullValueException() {
     // given
     doThrow(new NullValueException("message"))
         .when(runtimeServiceMock).setVariablesAsync(any(), any(), any(), any());
@@ -4503,7 +4505,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldThrowExceptionWhenSetVariablesAsync_BadUserRequestException() {
+  void shouldThrowExceptionWhenSetVariablesAsync_BadUserRequestException() {
     // given
     doThrow(new BadUserRequestException("message"))
         .when(runtimeServiceMock).setVariablesAsync(any(), any(), any(), any());
@@ -4521,7 +4523,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldSetVariablesAsync_RuntimeQuery() {
+  void shouldSetVariablesAsync_RuntimeQuery() {
     // given
     Batch batchMock = createMockBatch();
     when(runtimeServiceMock.setVariablesAsync(any(), any(), any(), any()))
@@ -4561,7 +4563,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldSetVariablesAsync_HistoryQuery() {
+  void shouldSetVariablesAsync_HistoryQuery() {
     // given
     Batch batchMock = createMockBatch();
     when(runtimeServiceMock.setVariablesAsync(any(), any(), any(), any()))
@@ -4602,7 +4604,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldSetVariablesAsync_ByIds() {
+  void shouldSetVariablesAsync_ByIds() {
     // given
     Batch batchMock = createMockBatch();
     when(runtimeServiceMock.setVariablesAsync(any(), any(), any(), any()))
@@ -4633,7 +4635,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldCorrelateMessageAsync() {
+  void shouldCorrelateMessageAsync() {
     // given
     Batch batchMock = createMockBatch();
     MessageCorrelationAsyncBuilder builderMock = mock(MessageCorrelationAsyncBuilder.class, RETURNS_SELF);
@@ -4659,7 +4661,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldNotTransformProcessEngineExceptionToInvalidRequestExceptionWhenCorrelateMessageAsync() {
+  void shouldNotTransformProcessEngineExceptionToInvalidRequestExceptionWhenCorrelateMessageAsync() {
     // given
     doThrow(new ProcessEngineException("message")).when(runtimeServiceMock).createMessageCorrelationAsync(any());
 
@@ -4676,7 +4678,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldThrowExceptionWhenCorrelateMessageAsync_AuthorizationException() {
+  void shouldThrowExceptionWhenCorrelateMessageAsync_AuthorizationException() {
     // given
     doThrow(new AuthorizationException("message")).when(runtimeServiceMock).createMessageCorrelationAsync(any());
 
@@ -4692,7 +4694,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldThrowExceptionWhenCorrelateMessageAsync_NullValueException() {
+  void shouldThrowExceptionWhenCorrelateMessageAsync_NullValueException() {
     // given
     doThrow(new NullValueException("message")).when(runtimeServiceMock).createMessageCorrelationAsync(any());
 
@@ -4709,7 +4711,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldThrowExceptionWhenCorrelateMessageAsync_BadUserRequestException() {
+  void shouldThrowExceptionWhenCorrelateMessageAsync_BadUserRequestException() {
     // given
     doThrow(new BadUserRequestException("message")).when(runtimeServiceMock).createMessageCorrelationAsync(any());
 
@@ -4726,7 +4728,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldCorrelateMessageAsync_RuntimeQuery() {
+  void shouldCorrelateMessageAsync_RuntimeQuery() {
     // given
     Batch batchMock = createMockBatch();
     MessageCorrelationAsyncBuilder builderMock = mock(MessageCorrelationAsyncBuilder.class, RETURNS_SELF);
@@ -4764,7 +4766,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldCorrelateMessageAsync_HistoryQuery() {
+  void shouldCorrelateMessageAsync_HistoryQuery() {
     // given
     Batch batchMock = createMockBatch();
     MessageCorrelationAsyncBuilder builderMock = mock(MessageCorrelationAsyncBuilder.class, RETURNS_SELF);
@@ -4804,7 +4806,7 @@ public class ProcessInstanceRestServiceInteractionTest extends AbstractRestServi
   }
 
   @Test
-  public void shouldCorrelateMessageAsync_ByIds() {
+  void shouldCorrelateMessageAsync_ByIds() {
     // given
     Batch batchMock = createMockBatch();
     MessageCorrelationAsyncBuilder builderMock = mock(MessageCorrelationAsyncBuilder.class, RETURNS_SELF);

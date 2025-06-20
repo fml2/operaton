@@ -43,11 +43,11 @@ import org.operaton.bpm.engine.rest.AbstractRestServiceTest;
 import org.operaton.bpm.engine.rest.exception.InvalidRequestException;
 import org.operaton.bpm.engine.rest.helper.MockProvider;
 import org.operaton.bpm.engine.rest.util.OrderingBuilder;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -60,8 +60,8 @@ import io.restassured.response.Response;
  */
 public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String HISTORIC_JOB_LOG_RESOURCE_URL = TEST_RESOURCE_ROOT_PATH + "/history/job-log";
   protected static final String HISTORIC_JOB_LOG_COUNT_RESOURCE_URL = HISTORIC_JOB_LOG_RESOURCE_URL + "/count";
@@ -71,8 +71,8 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
 
   protected HistoricJobLogQuery mockedQuery;
 
-  @Before
-  public void setUpRuntimeData() {
+  @BeforeEach
+  void setUpRuntimeData() {
     mockedQuery = setUpMockHistoricJobLogQuery(MockProvider.createMockHistoricJobLogs());
   }
 
@@ -87,7 +87,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testEmptyQuery() {
+  void testEmptyQuery() {
     String queryKey = "";
     given()
       .queryParam("processDefinitionKey", queryKey)
@@ -101,7 +101,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testNoParametersQuery() {
+  void testNoParametersQuery() {
     expect()
       .statusCode(Status.OK.getStatusCode())
     .when()
@@ -112,7 +112,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testNoParametersQueryAsPost() {
+  void testNoParametersQueryAsPost() {
     given()
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(EMPTY_JSON_OBJECT)
@@ -127,7 +127,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testInvalidSortingOptions() {
+  void testInvalidSortingOptions() {
     executeAndVerifySorting("anInvalidSortByOption", "asc", Status.BAD_REQUEST);
     executeAndVerifySorting("definitionId", "anInvalidSortOrderOption", Status.BAD_REQUEST);
   }
@@ -144,7 +144,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testSortByParameterOnly() {
+  void testSortByParameterOnly() {
     given()
       .queryParam("sortBy", "processDefinitionId")
     .then()
@@ -158,7 +158,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testSortOrderParameterOnly() {
+  void testSortOrderParameterOnly() {
     given()
       .queryParam("sortOrder", "asc")
     .then()
@@ -172,7 +172,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testSortingParameters() {
+  void testSortingParameters() {
     InOrder inOrder = Mockito.inOrder(mockedQuery);
     executeAndVerifySorting("timestamp", "asc", Status.OK);
     inOrder.verify(mockedQuery).orderByTimestamp();
@@ -325,7 +325,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testSecondarySortingAsPost() {
+  void testSecondarySortingAsPost() {
     InOrder inOrder = Mockito.inOrder(mockedQuery);
     Map<String, Object> json = new HashMap<>();
     json.put("sorting", OrderingBuilder.create()
@@ -344,7 +344,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testSuccessfulPagination() {
+  void testSuccessfulPagination() {
     int firstResult = 0;
     int maxResults = 10;
 
@@ -361,7 +361,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testMissingFirstResultParameter() {
+  void testMissingFirstResultParameter() {
     int maxResults = 10;
 
     given()
@@ -376,7 +376,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testMissingMaxResultsParameter() {
+  void testMissingMaxResultsParameter() {
     int firstResult = 10;
 
     given()
@@ -391,7 +391,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testQueryCount() {
+  void testQueryCount() {
     expect()
       .statusCode(Status.OK.getStatusCode())
       .body("count", equalTo(1))
@@ -403,7 +403,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
 
 
   @Test
-  public void testQueryCountForPost() {
+  void testQueryCountForPost() {
     given()
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(EMPTY_JSON_OBJECT)
@@ -417,7 +417,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testSimpleHistoricJobLogQuery() {
+  void testSimpleHistoricJobLogQuery() {
     String processInstanceId = MockProvider.EXAMPLE_PROCESS_INSTANCE_ID;
 
     Response response = given()
@@ -433,15 +433,14 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
     inOrder.verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> logs = from(content).getList("");
-    Assert.assertEquals("There should be one historic job log returned.", 1, logs.size());
+    List<Map<String, Object>> logs = from(content).getList("");
     assertThat(logs.get(0)).as("The returned historic job log should not be null.").isNotNull();
 
     verifyHistoricJobLogEntries(content);
   }
 
   @Test
-  public void testSimpleHistoricJobLogQueryAsPost() {
+  void testSimpleHistoricJobLogQueryAsPost() {
     String processInstanceId = MockProvider.EXAMPLE_HISTORIC_JOB_LOG_PROC_INST_ID;
 
     Map<String, Object> json = new HashMap<>();
@@ -461,8 +460,8 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
     inOrder.verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> logs = from(content).getList("");
-    Assert.assertEquals("There should be one historic job log returned.", 1, logs.size());
+    List<Map<String, Object>> logs = from(content).getList("");
+    Assertions.assertEquals(1, logs.size(), "There should be one historic job log returned.");
     assertThat(logs.get(0)).as("The returned historic job log should not be null.").isNotNull();
 
     verifyHistoricJobLogEntries(content);
@@ -494,34 +493,34 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
     boolean returnedSuccessLog = from(content).getBoolean("[0].successLog");
     boolean returnedDeletionLog = from(content).getBoolean("[0].deletionLog");
 
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_ID, returnedId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_TIMESTAMP, returnedTimestamp);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_REMOVAL_TIME, returnedRemovalTime);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_ID, returnedJobId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_DUE_DATE, returnedJobDueDate);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_RETRIES, returnedJobRetries);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_PRIORITY, returnedJobPriority);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_EXCEPTION_MSG, returnedJobExceptionMessage);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_DEF_ID, returnedJobDefinitionId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_DEF_TYPE, returnedJobDefinitionType);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_DEF_CONFIG, returnedJobDefinitionConfiguration);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_ACTIVITY_ID, returnedActivityId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_FAILED_ACTIVITY_ID, returnedFailedActivityId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_EXECUTION_ID, returnedExecutionId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_PROC_INST_ID, returnedProcessInstanceId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_PROC_DEF_ID, returnedProcessDefinitionId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_PROC_DEF_KEY, returnedProcessDefinitionKey);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_DEPLOYMENT_ID, returnedDeploymentId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_ROOT_PROC_INST_ID, returnedRootProcessInstanceId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_HOSTNAME, returnedHostname);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_IS_CREATION_LOG, returnedCreationLog);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_IS_FAILURE_LOG, returnedFailureLog);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_IS_SUCCESS_LOG, returnedSuccessLog);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_IS_DELETION_LOG, returnedDeletionLog);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_ID, returnedId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_TIMESTAMP, returnedTimestamp);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_REMOVAL_TIME, returnedRemovalTime);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_ID, returnedJobId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_DUE_DATE, returnedJobDueDate);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_RETRIES, returnedJobRetries);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_PRIORITY, returnedJobPriority);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_EXCEPTION_MSG, returnedJobExceptionMessage);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_DEF_ID, returnedJobDefinitionId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_DEF_TYPE, returnedJobDefinitionType);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_JOB_DEF_CONFIG, returnedJobDefinitionConfiguration);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_ACTIVITY_ID, returnedActivityId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_FAILED_ACTIVITY_ID, returnedFailedActivityId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_EXECUTION_ID, returnedExecutionId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_PROC_INST_ID, returnedProcessInstanceId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_PROC_DEF_ID, returnedProcessDefinitionId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_PROC_DEF_KEY, returnedProcessDefinitionKey);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_DEPLOYMENT_ID, returnedDeploymentId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_ROOT_PROC_INST_ID, returnedRootProcessInstanceId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_HOSTNAME, returnedHostname);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_IS_CREATION_LOG, returnedCreationLog);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_IS_FAILURE_LOG, returnedFailureLog);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_IS_SUCCESS_LOG, returnedSuccessLog);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_JOB_LOG_IS_DELETION_LOG, returnedDeletionLog);
   }
 
   @Test
-  public void testStringParameters() {
+  void testStringParameters() {
     Map<String, String> stringQueryParameters = getCompleteStringQueryParameters();
 
     given()
@@ -536,7 +535,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testStringParametersAsPost() {
+  void testStringParametersAsPost() {
     Map<String, String> stringQueryParameters = getCompleteStringQueryParameters();
 
     given()
@@ -588,7 +587,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testListParameters() {
+  void testListParameters() {
     String anActId = "anActId";
     String anotherActId = "anotherActId";
 
@@ -612,7 +611,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testListParametersAsPost() {
+  void testListParametersAsPost() {
     String anActId = "anActId";
     String anotherActId = "anotherActId";
 
@@ -640,7 +639,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testBooleanParameters() {
+  void testBooleanParameters() {
     Map<String, Boolean> params = getCompleteBooleanQueryParameters();
 
     given()
@@ -655,7 +654,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testBooleanParametersAsPost() {
+  void testBooleanParametersAsPost() {
     Map<String, Boolean> params = getCompleteBooleanQueryParameters();
 
     given()
@@ -691,7 +690,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testIntegerParameters() {
+  void testIntegerParameters() {
     Map<String, Object> params = getCompleteIntegerQueryParameters();
 
     given()
@@ -706,7 +705,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testIntegerParametersAsPost() {
+  void testIntegerParametersAsPost() {
     Map<String, Object> params = getCompleteIntegerQueryParameters();
 
     given()
@@ -739,7 +738,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testTenantIdListParameter() {
+  void testTenantIdListParameter() {
     mockedQuery = setUpMockHistoricJobLogQuery(createMockHistoricJobLogsTwoTenants());
 
     Response response = given()
@@ -753,7 +752,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> jobLogs = from(content).getList("");
+    List<Map<String, Object>> jobLogs = from(content).getList("");
     assertThat(jobLogs).hasSize(2);
 
     String returnedTenantId1 = from(content).getString("[0].tenantId");
@@ -764,7 +763,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testTenantIdListPostParameter() {
+  void testTenantIdListPostParameter() {
     mockedQuery = setUpMockHistoricJobLogQuery(createMockHistoricJobLogsTwoTenants());
 
     Map<String, Object> queryParameters = new HashMap<>();
@@ -782,7 +781,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> jobLogs = from(content).getList("");
+    List<Map<String, Object>> jobLogs = from(content).getList("");
     assertThat(jobLogs).hasSize(2);
 
     String returnedTenantId1 = from(content).getString("[0].tenantId");
@@ -793,7 +792,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testQueryWithoutTenantIdQueryParameter() {
+  void testQueryWithoutTenantIdQueryParameter() {
     // given
     HistoricJobLog jobLog = MockProvider.createMockHistoricJobLog(null);
     mockedQuery = setUpMockHistoricJobLogQuery(Collections.singletonList(jobLog));
@@ -811,7 +810,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> definitions = from(content).getList("");
+    List<Map<String, Object>> definitions = from(content).getList("");
     assertThat(definitions).hasSize(1);
 
     String returnedTenantId = from(content).getString("[0].tenantId");
@@ -819,7 +818,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testQueryWithoutTenantIdPostParameter() {
+  void testQueryWithoutTenantIdPostParameter() {
     // given
     HistoricJobLog jobLog = MockProvider.createMockHistoricJobLog(null);
     mockedQuery = setUpMockHistoricJobLogQuery(Collections.singletonList(jobLog));
@@ -839,7 +838,7 @@ public class HistoricJobLogRestServiceQueryTest extends AbstractRestServiceTest 
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> definitions = from(content).getList("");
+    List<Map<String, Object>> definitions = from(content).getList("");
     assertThat(definitions).hasSize(1);
 
     String returnedTenantId = from(content).getString("[0].tenantId");

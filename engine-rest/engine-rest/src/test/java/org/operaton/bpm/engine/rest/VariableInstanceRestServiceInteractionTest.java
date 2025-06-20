@@ -32,16 +32,16 @@ import static org.mockito.Mockito.when;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import jakarta.ws.rs.core.Response.Status;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.operaton.bpm.engine.RuntimeService;
 import org.operaton.bpm.engine.rest.helper.MockObjectValue;
 import org.operaton.bpm.engine.rest.helper.MockProvider;
 import org.operaton.bpm.engine.rest.helper.MockVariableInstanceBuilder;
 import org.operaton.bpm.engine.rest.helper.VariableTypeHelper;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 import org.operaton.bpm.engine.runtime.VariableInstance;
 import org.operaton.bpm.engine.runtime.VariableInstanceQuery;
 import org.operaton.bpm.engine.variable.Variables;
@@ -55,8 +55,8 @@ import org.operaton.bpm.engine.variable.value.ObjectValue;
  */
 public class VariableInstanceRestServiceInteractionTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String SERVICE_URL = TEST_RESOURCE_ROOT_PATH + "/variable-instance";
   protected static final String VARIABLE_INSTANCE_URL = SERVICE_URL + "/{id}";
@@ -66,8 +66,8 @@ public class VariableInstanceRestServiceInteractionTest extends AbstractRestServ
 
   protected VariableInstanceQuery variableInstanceQueryMock;
 
-  @Before
-  public void setupTestData() {
+  @BeforeEach
+  void setupTestData() {
     runtimeServiceMock = mock(RuntimeService.class);
     variableInstanceQueryMock = mock(VariableInstanceQuery.class);
 
@@ -77,7 +77,7 @@ public class VariableInstanceRestServiceInteractionTest extends AbstractRestServ
   }
 
   @Test
-  public void testGetSingleVariableInstance() {
+  void testGetSingleVariableInstance() {
 
     MockVariableInstanceBuilder builder = MockProvider.mockVariableInstance();
     VariableInstance variableInstanceMock = builder.build();
@@ -110,7 +110,7 @@ public class VariableInstanceRestServiceInteractionTest extends AbstractRestServ
   }
 
   @Test
-  public void testGetSingleVariableInstanceDeserialized() {
+  void testGetSingleVariableInstanceDeserialized() {
     ObjectValue serializedValue = MockObjectValue.fromObjectValue(
         Variables.objectValue("a value").serializationDataFormat("aDataFormat").create())
         .objectTypeName("aTypeName");
@@ -148,7 +148,7 @@ public class VariableInstanceRestServiceInteractionTest extends AbstractRestServ
   }
 
   @Test
-  public void testGetSingleVariableInstanceSerialized() {
+  void testGetSingleVariableInstanceSerialized() {
     ObjectValue serializedValue = Variables.serializedObjectValue("a serialized value")
         .serializationDataFormat("aDataFormat").objectTypeName("aTypeName").create();
 
@@ -188,7 +188,7 @@ public class VariableInstanceRestServiceInteractionTest extends AbstractRestServ
   }
 
   @Test
-  public void testGetSingleVariableInstanceForBinaryVariable() {
+  void testGetSingleVariableInstanceForBinaryVariable() {
     MockVariableInstanceBuilder builder = MockProvider.mockVariableInstance();
     VariableInstance variableInstanceMock =
         builder
@@ -212,7 +212,7 @@ public class VariableInstanceRestServiceInteractionTest extends AbstractRestServ
   }
 
   @Test
-  public void testGetNonExistingVariableInstance() {
+  void testGetNonExistingVariableInstance() {
 
     String nonExistingId = "nonExistingId";
 
@@ -230,7 +230,7 @@ public class VariableInstanceRestServiceInteractionTest extends AbstractRestServ
   }
 
   @Test
-  public void testBinaryDataForBinaryVariable() {
+  void testBinaryDataForBinaryVariable() {
     final byte[] byteContent = "some bytes".getBytes();
 
     VariableInstance variableInstanceMock =
@@ -249,14 +249,14 @@ public class VariableInstanceRestServiceInteractionTest extends AbstractRestServ
     .when().get(VARIABLE_INSTANCE_BINARY_DATA_URL);
 
     byte[] responseBytes = response.getBody().asByteArray();
-    Assert.assertEquals(new String(byteContent), new String(responseBytes));
+    Assertions.assertEquals(new String(byteContent), new String(responseBytes));
     verify(variableInstanceQueryMock, never()).disableBinaryFetching();
     verify(variableInstanceQueryMock).disableCustomObjectDeserialization();
 
   }
 
   @Test
-  public void testBinaryDataForNonBinaryVariable() {
+  void testBinaryDataForNonBinaryVariable() {
     VariableInstance variableInstanceMock = MockProvider.createMockVariableInstance();
 
     when(variableInstanceQueryMock.variableId(variableInstanceMock.getId())).thenReturn(variableInstanceQueryMock);
@@ -275,7 +275,7 @@ public class VariableInstanceRestServiceInteractionTest extends AbstractRestServ
   }
 
   @Test
-  public void testGetBinaryDataForNonExistingVariableInstance() {
+  void testGetBinaryDataForNonExistingVariableInstance() {
 
     String nonExistingId = "nonExistingId";
 
@@ -293,7 +293,7 @@ public class VariableInstanceRestServiceInteractionTest extends AbstractRestServ
   }
 
   @Test
-  public void testGetBinaryDataForFileVariable() {
+  void testGetBinaryDataForFileVariable() {
     String filename = "test.txt";
     byte[] byteContent = "test".getBytes();
     String encoding = UTF_8.name();
@@ -321,11 +321,11 @@ public class VariableInstanceRestServiceInteractionTest extends AbstractRestServ
     .when().get(VARIABLE_INSTANCE_BINARY_DATA_URL);
     //due to some problems with wildfly we gotta check this separately
     String contentType = response.getContentType();
-    assertThat(contentType).isEqualTo(ContentType.TEXT.toString() + ";charset=UTF-8");
+    assertThat(contentType).isEqualTo(ContentType.TEXT.toString() + "; charset=UTF-8");
   }
 
   @Test
-  public void testGetBinaryDataForNullFileVariable() {
+  void testGetBinaryDataForNullFileVariable() {
     String filename = "test.txt";
     byte[] byteContent = null;
     FileValue variableValue = Variables.fileValue(filename).file(byteContent).mimeType(ContentType.TEXT.toString()).create();

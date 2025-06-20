@@ -16,6 +16,40 @@
  */
 package org.operaton.bpm.engine.rest;
 
+import java.util.Map;
+import static io.restassured.RestAssured.expect;
+import static io.restassured.RestAssured.given;
+import static io.restassured.path.json.JsonPath.from;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import static org.operaton.bpm.engine.rest.util.DateTimeUtils.withTimezone;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 import org.operaton.bpm.engine.ProcessEngineException;
 import org.operaton.bpm.engine.impl.ProcessInstanceQueryImpl;
 import org.operaton.bpm.engine.impl.calendar.DateTimeUtil;
@@ -24,46 +58,27 @@ import org.operaton.bpm.engine.rest.exception.InvalidRequestException;
 import org.operaton.bpm.engine.rest.helper.MockProvider;
 import org.operaton.bpm.engine.rest.helper.variable.EqualsPrimitiveValue;
 import org.operaton.bpm.engine.rest.util.OrderingBuilder;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 import org.operaton.bpm.engine.runtime.ProcessInstance;
 import org.operaton.bpm.engine.runtime.ProcessInstanceQuery;
-import static org.operaton.bpm.engine.rest.util.DateTimeUtils.withTimezone;
-
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response.Status;
-import java.util.*;
 
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
-import org.mockito.Mockito;
-
-import static io.restassured.RestAssured.expect;
-import static io.restassured.RestAssured.given;
-import static io.restassured.path.json.JsonPath.from;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Mockito.*;
-import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response.Status;
 
 public class ProcessInstanceRestServiceQueryTest extends
     AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String PROCESS_INSTANCE_QUERY_URL = TEST_RESOURCE_ROOT_PATH + "/process-instance";
   protected static final String PROCESS_INSTANCE_COUNT_QUERY_URL = PROCESS_INSTANCE_QUERY_URL + "/count";
   protected ProcessInstanceQuery mockedQuery;
 
-  @Before
-  public void setUpRuntimeData() {
+  @BeforeEach
+  void setUpRuntimeData() {
     mockedQuery = setUpMockInstanceQuery(createMockInstanceList());
   }
 
@@ -83,7 +98,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testEmptyQuery() {
+  void testEmptyQuery() {
     String queryKey = "";
     given().queryParam("processDefinitionKey", queryKey)
       .then().expect().statusCode(Status.OK.getStatusCode())
@@ -91,7 +106,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testInvalidVariableRequests() {
+  void testInvalidVariableRequests() {
     // invalid comparator
     String invalidComparator = "anInvalidComparator";
     String variableName = "varName";
@@ -113,7 +128,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testInvalidSortingOptions() {
+  void testInvalidSortingOptions() {
     executeAndVerifySorting("anInvalidSortByOption", "asc", Status.BAD_REQUEST);
     executeAndVerifySorting("definitionId", "anInvalidSortOrderOption", Status.BAD_REQUEST);
   }
@@ -125,21 +140,21 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testSortByParameterOnly() {
+  void testSortByParameterOnly() {
     given().queryParam("sortBy", "definitionId")
       .then().expect().statusCode(Status.BAD_REQUEST.getStatusCode())
       .when().get(PROCESS_INSTANCE_QUERY_URL);
   }
 
   @Test
-  public void testSortOrderParameterOnly() {
+  void testSortOrderParameterOnly() {
     given().queryParam("sortOrder", "asc")
       .then().expect().statusCode(Status.BAD_REQUEST.getStatusCode())
       .when().get(PROCESS_INSTANCE_QUERY_URL);
   }
 
   @Test
-  public void testInstanceRetrieval() {
+  void testInstanceRetrieval() {
     String queryKey = "key";
     Response response = given().queryParam("processDefinitionKey", queryKey)
         .then().expect().statusCode(Status.OK.getStatusCode())
@@ -151,8 +166,8 @@ public class ProcessInstanceRestServiceQueryTest extends
     inOrder.verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> instances = from(content).getList("");
-    Assert.assertEquals("There should be one process definition returned.", 1, instances.size());
+    List<Map<String, Object>> instances = from(content).getList("");
+    Assertions.assertEquals(1, instances.size(), "There should be one process definition returned.");
     assertThat(instances.get(0)).as("There should be one process definition returned").isNotNull();
 
     String returnedInstanceId = from(content).getString("[0].id");
@@ -163,17 +178,17 @@ public class ProcessInstanceRestServiceQueryTest extends
     String returnedCaseInstanceId = from(content).getString("[0].caseInstanceId");
     String returnedTenantId = from(content).getString("[0].tenantId");
 
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId);
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_IS_ENDED, returnedIsEnded);
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_ID, returnedDefinitionId);
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_BUSINESS_KEY, returnedBusinessKey);
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_IS_SUSPENDED, returnedIsSuspended);
-    Assert.assertEquals(MockProvider.EXAMPLE_CASE_INSTANCE_ID, returnedCaseInstanceId);
-    Assert.assertEquals(MockProvider.EXAMPLE_TENANT_ID, returnedTenantId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_IS_ENDED, returnedIsEnded);
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_ID, returnedDefinitionId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_BUSINESS_KEY, returnedBusinessKey);
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_IS_SUSPENDED, returnedIsSuspended);
+    Assertions.assertEquals(MockProvider.EXAMPLE_CASE_INSTANCE_ID, returnedCaseInstanceId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_TENANT_ID, returnedTenantId);
   }
 
   @Test
-  public void testIncompleteProcessInstance() {
+  void testIncompleteProcessInstance() {
     setUpMockInstanceQuery(createIncompleteMockInstances());
     Response response = expect().statusCode(Status.OK.getStatusCode())
         .when().get(PROCESS_INSTANCE_QUERY_URL);
@@ -193,7 +208,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testNoParametersQuery() {
+  void testNoParametersQuery() {
     expect().statusCode(Status.OK.getStatusCode()).when().get(PROCESS_INSTANCE_QUERY_URL);
 
     verify(mockedQuery).list();
@@ -201,7 +216,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testAdditionalParametersExcludingVariables() {
+  void testAdditionalParametersExcludingVariables() {
     Map<String, String> queryParameters = getCompleteQueryParameters();
 
     given().queryParams(queryParameters)
@@ -251,7 +266,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValueEquals() {
+  void testVariableValueEquals() {
     String variableName = "varName";
     String variableValue = "varValue";
     String queryValue = variableName + "_eq_" + variableValue;
@@ -268,7 +283,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValueGreaterThan() {
+  void testVariableValueGreaterThan() {
     String variableName = "varName";
     String variableValue = "varValue";
     String queryValue = variableName + "_gt_" + variableValue;
@@ -285,7 +300,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValueGreaterThanEquals() {
+  void testVariableValueGreaterThanEquals() {
     String variableName = "varName";
     String variableValue = "varValue";
     String queryValue = variableName + "_gteq_" + variableValue;
@@ -302,7 +317,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValueLessThan() {
+  void testVariableValueLessThan() {
     String variableName = "varName";
     String variableValue = "varValue";
     String queryValue = variableName + "_lt_" + variableValue;
@@ -319,7 +334,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValueLessThanEquals() {
+  void testVariableValueLessThanEquals() {
     String variableName = "varName";
     String variableValue = "varValue";
     String queryValue = variableName + "_lteq_" + variableValue;
@@ -335,7 +350,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValueLike() {
+  void testVariableValueLike() {
     String variableName = "varName";
     String variableValue = "varValue";
     String queryValue = variableName + "_like_" + variableValue;
@@ -352,7 +367,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValueNotEquals() {
+  void testVariableValueNotEquals() {
     String variableName = "varName";
     String variableValue = "varValue";
     String queryValue = variableName + "_neq_" + variableValue;
@@ -369,7 +384,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableNamesEqualsIgnoreCase() {
+  void testVariableNamesEqualsIgnoreCase() {
     String variableName = "varName";
     String variableValue = "varValue";
     String queryValue = variableName + "_eq_" + variableValue;
@@ -388,7 +403,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValuesEqualsIgnoreCase() {
+  void testVariableValuesEqualsIgnoreCase() {
     String variableName = "varName";
     String variableValue = "varValue";
     String queryValue = variableName + "_eq_" + variableValue;
@@ -407,7 +422,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableNamesNotEqualsIgnoreCase() {
+  void testVariableNamesNotEqualsIgnoreCase() {
     String variableName = "varName";
     String variableValue = "varValue";
     String queryValue = variableName + "_neq_" + variableValue;
@@ -426,7 +441,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValuesNotEqualsIgnoreCase() {
+  void testVariableValuesNotEqualsIgnoreCase() {
     String variableName = "varName";
     String variableValue = "varValue";
     String queryValue = variableName + "_neq_" + variableValue;
@@ -445,7 +460,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValuesLikeIgnoreCase() {
+  void testVariableValuesLikeIgnoreCase() {
     String variableName = "varName";
     String variableValue = "varValue";
     String queryValue = variableName + "_like_" + variableValue;
@@ -464,7 +479,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValueEqualsAsPost() {
+  void testVariableValueEqualsAsPost() {
     Map<String, Object> variableJson = new HashMap<>();
     variableJson.put("name", "varName");
     variableJson.put("value", "varValue");
@@ -489,7 +504,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValueGreaterThanAsPost() {
+  void testVariableValueGreaterThanAsPost() {
     Map<String, Object> variableJson = new HashMap<>();
     variableJson.put("name", "varName");
     variableJson.put("value", "varValue");
@@ -514,7 +529,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValueGreaterThanEqualsAsPost() {
+  void testVariableValueGreaterThanEqualsAsPost() {
     Map<String, Object> variableJson = new HashMap<>();
     variableJson.put("name", "varName");
     variableJson.put("value", "varValue");
@@ -539,7 +554,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValueLessThanAsPost() {
+  void testVariableValueLessThanAsPost() {
     Map<String, Object> variableJson = new HashMap<>();
     variableJson.put("name", "varName");
     variableJson.put("value", "varValue");
@@ -564,7 +579,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValueLessThanEqualsAsPost() {
+  void testVariableValueLessThanEqualsAsPost() {
     Map<String, Object> variableJson = new HashMap<>();
     variableJson.put("name", "varName");
     variableJson.put("value", "varValue");
@@ -589,7 +604,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValueLikeAsPost() {
+  void testVariableValueLikeAsPost() {
     Map<String, Object> variableJson = new HashMap<>();
     variableJson.put("name", "varName");
     variableJson.put("value", "varValue");
@@ -614,7 +629,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValueNotEqualsAsPost() {
+  void testVariableValueNotEqualsAsPost() {
     Map<String, Object> variableJson = new HashMap<>();
     variableJson.put("name", "varName");
     variableJson.put("value", "varValue");
@@ -639,7 +654,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValuesEqualsIgnoreCaseAsPost() {
+  void testVariableValuesEqualsIgnoreCaseAsPost() {
     Map<String, Object> variableJson = new HashMap<>();
     variableJson.put("name", "varName");
     variableJson.put("value", "varValue");
@@ -666,7 +681,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValuesNotEqualsIgnoreCaseAsPost() {
+  void testVariableValuesNotEqualsIgnoreCaseAsPost() {
     Map<String, Object> variableJson = new HashMap<>();
     variableJson.put("name", "varName");
     variableJson.put("value", "varValue");
@@ -693,7 +708,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableValuesLikeIgnoreCaseAsPost() {
+  void testVariableValuesLikeIgnoreCaseAsPost() {
     Map<String, Object> variableJson = new HashMap<>();
     variableJson.put("name", "varName");
     variableJson.put("value", "varValue");
@@ -721,7 +736,7 @@ public class ProcessInstanceRestServiceQueryTest extends
 
 
   @Test
-  public void testVariableNamesEqualsIgnoreCaseAsPost() {
+  void testVariableNamesEqualsIgnoreCaseAsPost() {
     Map<String, Object> variableJson = new HashMap<>();
     variableJson.put("name", "varName");
     variableJson.put("value", "varValue");
@@ -748,7 +763,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testVariableNamesNotEqualsIgnoreCaseAsPost() {
+  void testVariableNamesNotEqualsIgnoreCaseAsPost() {
     Map<String, Object> variableJson = new HashMap<>();
     variableJson.put("name", "varName");
     variableJson.put("value", "varValue");
@@ -775,7 +790,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testMultipleVariableParameters() {
+  void testMultipleVariableParameters() {
     String variableName1 = "varName";
     String variableValue1 = "varValue";
     String variableParameter1 = variableName1 + "_eq_" + variableValue1;
@@ -795,7 +810,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testMultipleVariableParametersAsPost() {
+  void testMultipleVariableParametersAsPost() {
     String variableName = "varName";
     String variableValue = "varValue";
     String anotherVariableName = "anotherVarName";
@@ -827,7 +842,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testDateVariableParameter() {
+  void testDateVariableParameter() {
     String variableName = "varName";
     String variableValue = withTimezone("2014-06-16T10:00:00");
     String queryValue = variableName + "_eq_" + variableValue;
@@ -846,7 +861,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testDateVariableParameterAsPost() {
+  void testDateVariableParameterAsPost() {
     String variableName = "varName";
     String variableValue = withTimezone("2014-06-16T10:00:00");
 
@@ -876,7 +891,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testCompletePostParameters() {
+  void testCompletePostParameters() {
     Map<String, String> queryParameters = getCompleteQueryParameters();
 
     given().contentType(POST_JSON_CONTENT_TYPE).body(queryParameters)
@@ -903,7 +918,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testTenantIdListParameter() {
+  void testTenantIdListParameter() {
     mockedQuery = setUpMockInstanceQuery(createMockProcessInstancesTwoTenants());
 
     Response response = given()
@@ -917,7 +932,7 @@ public class ProcessInstanceRestServiceQueryTest extends
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> instances = from(content).getList("");
+    List<Map<String, Object>> instances = from(content).getList("");
     assertThat(instances).hasSize(2);
 
     String returnedTenantId1 = from(content).getString("[0].tenantId");
@@ -928,7 +943,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testWithoutTenantIdParameter() {
+  void testWithoutTenantIdParameter() {
     mockedQuery = setUpMockInstanceQuery(Arrays.asList(MockProvider.createMockInstance(null)));
 
     Response response = given()
@@ -942,7 +957,7 @@ public class ProcessInstanceRestServiceQueryTest extends
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> definitions = from(content).getList("");
+    List<Map<String, Object>> definitions = from(content).getList("");
     assertThat(definitions).hasSize(1);
 
     String returnedTenantId1 = from(content).getString("[0].tenantId");
@@ -950,7 +965,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testTenantIdListPostParameter() {
+  void testTenantIdListPostParameter() {
     mockedQuery = setUpMockInstanceQuery(createMockProcessInstancesTwoTenants());
 
     Map<String, Object> queryParameters = new HashMap<>();
@@ -968,7 +983,7 @@ public class ProcessInstanceRestServiceQueryTest extends
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> executions = from(content).getList("");
+    List<Map<String, Object>> executions = from(content).getList("");
     assertThat(executions).hasSize(2);
 
     String returnedTenantId1 = from(content).getString("[0].tenantId");
@@ -979,7 +994,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testWithoutTenantIdPostParameter() {
+  void testWithoutTenantIdPostParameter() {
     mockedQuery = setUpMockInstanceQuery(Arrays.asList(MockProvider.createMockInstance(null)));
 
     Map<String, Object> queryParameters = new HashMap<>();
@@ -997,7 +1012,7 @@ public class ProcessInstanceRestServiceQueryTest extends
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> definitions = from(content).getList("");
+    List<Map<String, Object>> definitions = from(content).getList("");
     assertThat(definitions).hasSize(1);
 
     String returnedTenantId1 = from(content).getString("[0].tenantId");
@@ -1011,7 +1026,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testActivityIdListParameter() {
+  void testActivityIdListParameter() {
     given()
       .queryParam("activityIdIn", MockProvider.EXAMPLE_ACTIVITY_ID_LIST)
     .then().expect()
@@ -1024,7 +1039,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testActivityIdListPostParameter() {
+  void testActivityIdListPostParameter() {
     Map<String, Object> queryParameters = new HashMap<>();
     queryParameters.put("activityIdIn", MockProvider.EXAMPLE_ACTIVITY_ID_LIST.split(","));
 
@@ -1041,7 +1056,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testSortingParameters() {
+  void testSortingParameters() {
     InOrder inOrder = Mockito.inOrder(mockedQuery);
     executeAndVerifySorting("instanceId", "asc", Status.OK);
     inOrder.verify(mockedQuery).orderByProcessInstanceId();
@@ -1069,7 +1084,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testSecondarySortingAsPost() {
+  void testSecondarySortingAsPost() {
     InOrder inOrder = Mockito.inOrder(mockedQuery);
     Map<String, Object> json = new HashMap<>();
     json.put("sorting", OrderingBuilder.create()
@@ -1088,7 +1103,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testSuccessfulPagination() {
+  void testSuccessfulPagination() {
 
     int firstResult = 0;
     int maxResults = 10;
@@ -1103,7 +1118,7 @@ public class ProcessInstanceRestServiceQueryTest extends
    * If parameter "firstResult" is missing, we expect 0 as default.
    */
   @Test
-  public void testMissingFirstResultParameter() {
+  void testMissingFirstResultParameter() {
     int maxResults = 10;
     given().queryParam("maxResults", maxResults)
       .then().expect().statusCode(Status.OK.getStatusCode())
@@ -1116,7 +1131,7 @@ public class ProcessInstanceRestServiceQueryTest extends
    * If parameter "maxResults" is missing, we expect Integer.MAX_VALUE as default.
    */
   @Test
-  public void testMissingMaxResultsParameter() {
+  void testMissingMaxResultsParameter() {
     int firstResult = 10;
     given().queryParam("firstResult", firstResult)
       .then().expect().statusCode(Status.OK.getStatusCode())
@@ -1126,7 +1141,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testQueryCount() {
+  void testQueryCount() {
     expect().statusCode(Status.OK.getStatusCode())
       .body("count", equalTo(1))
       .when().get(PROCESS_INSTANCE_COUNT_QUERY_URL);
@@ -1135,7 +1150,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testQueryCountForPost() {
+  void testQueryCountForPost() {
     given().contentType(POST_JSON_CONTENT_TYPE).body(EMPTY_JSON_OBJECT)
     .expect().statusCode(Status.OK.getStatusCode())
       .body("count", equalTo(1))
@@ -1145,7 +1160,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testInstanceRetrievalByList() {
+  void testInstanceRetrievalByList() {
     List<ProcessInstance> mockProcessInstanceList = new ArrayList<>();
 
     mockProcessInstanceList.add(MockProvider.createMockInstance());
@@ -1172,18 +1187,18 @@ public class ProcessInstanceRestServiceQueryTest extends
     inOrder.verify(instanceQuery).list();
 
     String content = response.asString();
-    List<String> instances = from(content).getList("");
-    Assert.assertEquals("There should be two process definitions returned.", 2, instances.size());
+    List<Map<String, Object>> instances = from(content).getList("");
+    Assertions.assertEquals(2, instances.size(), "There should be two process definitions returned.");
 
     String returnedInstanceId1 = from(content).getString("[0].id");
     String returnedInstanceId2 = from(content).getString("[1].id");
 
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId1);
-    Assert.assertEquals(MockProvider.ANOTHER_EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId2);
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId1);
+    Assertions.assertEquals(MockProvider.ANOTHER_EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId2);
   }
 
   @Test
-  public void testInstanceRetrievalByListAsPost() {
+  void testInstanceRetrievalByListAsPost() {
     List<ProcessInstance> mockProcessInstanceList = new ArrayList<>();
 
     mockProcessInstanceList.add(MockProvider.createMockInstance());
@@ -1214,18 +1229,18 @@ public class ProcessInstanceRestServiceQueryTest extends
     inOrder.verify(instanceQuery).list();
 
     String content = response.asString();
-    List<String> instances = from(content).getList("");
-    Assert.assertEquals("There should be two process definitions returned.", 2, instances.size());
+    List<Map<String, Object>> instances = from(content).getList("");
+    Assertions.assertEquals(2, instances.size(), "There should be two process definitions returned.");
 
     String returnedInstanceId1 = from(content).getString("[0].id");
     String returnedInstanceId2 = from(content).getString("[1].id");
 
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId1);
-    Assert.assertEquals(MockProvider.ANOTHER_EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId2);
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId1);
+    Assertions.assertEquals(MockProvider.ANOTHER_EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId2);
   }
 
   @Test
-  public void testInstanceRetrievalByListWithDuplicate() {
+  void testInstanceRetrievalByListWithDuplicate() {
     List<ProcessInstance> mockProcessInstanceList = new ArrayList<>();
 
     mockProcessInstanceList.add(MockProvider.createMockInstance());
@@ -1252,18 +1267,18 @@ public class ProcessInstanceRestServiceQueryTest extends
     inOrder.verify(instanceQuery).list();
 
     String content = response.asString();
-    List<String> instances = from(content).getList("");
-    Assert.assertEquals("There should be two process definitions returned.", 2, instances.size());
+    List<Map<String, Object>> instances = from(content).getList("");
+    Assertions.assertEquals(2, instances.size(), "There should be two process definitions returned.");
 
     String returnedInstanceId1 = from(content).getString("[0].id");
     String returnedInstanceId2 = from(content).getString("[1].id");
 
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId1);
-    Assert.assertEquals(MockProvider.ANOTHER_EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId2);
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId1);
+    Assertions.assertEquals(MockProvider.ANOTHER_EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId2);
   }
 
   @Test
-  public void testInstanceRetrievalByListWithDuplicateAsPost() {
+  void testInstanceRetrievalByListWithDuplicateAsPost() {
     List<ProcessInstance> mockProcessInstanceList = new ArrayList<>();
 
     mockProcessInstanceList.add(MockProvider.createMockInstance());
@@ -1293,18 +1308,18 @@ public class ProcessInstanceRestServiceQueryTest extends
     inOrder.verify(instanceQuery).list();
 
     String content = response.asString();
-    List<String> instances = from(content).getList("");
-    Assert.assertEquals("There should be two process definitions returned.", 2, instances.size());
+    List<Map<String, Object>> instances = from(content).getList("");
+    Assertions.assertEquals(2, instances.size(), "There should be two process definitions returned.");
 
     String returnedInstanceId1 = from(content).getString("[0].id");
     String returnedInstanceId2 = from(content).getString("[1].id");
 
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId1);
-    Assert.assertEquals(MockProvider.ANOTHER_EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId2);
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId1);
+    Assertions.assertEquals(MockProvider.ANOTHER_EXAMPLE_PROCESS_INSTANCE_ID, returnedInstanceId2);
   }
 
   @Test
-  public void testInstanceRetrievalByListWithEmpty() {
+  void testInstanceRetrievalByListWithEmpty() {
     ProcessInstanceQuery instanceQuery = mock(ProcessInstanceQuery.class);
 
     when(instanceQuery.list()).thenReturn(null);
@@ -1325,7 +1340,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testInstanceRetrievalByListWithEmptyAsPost() {
+  void testInstanceRetrievalByListWithEmptyAsPost() {
     ProcessInstanceQuery instanceQuery = mock(ProcessInstanceQuery.class);
 
     when(instanceQuery.list()).thenReturn(null);
@@ -1349,7 +1364,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testQueryRootProcessInstances() {
+  void testQueryRootProcessInstances() {
     given()
       .queryParam("rootProcessInstances", true)
     .then()
@@ -1362,7 +1377,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testQueryRootProcessInstancesAsPost() {
+  void testQueryRootProcessInstancesAsPost() {
     Map<String, Object> params =new HashMap<>();
     params.put("rootProcessInstances", true);
 
@@ -1379,7 +1394,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testQueryLeafProcessInstances() {
+  void testQueryLeafProcessInstances() {
     given()
     .queryParam("leafProcessInstances", true)
     .then()
@@ -1392,7 +1407,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testQueryLeafProcessInstancesAsPost() {
+  void testQueryLeafProcessInstancesAsPost() {
     Map<String, Object> params =new HashMap<>();
     params.put("leafProcessInstances", true);
 
@@ -1409,7 +1424,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testQueryProcessDefinitionWithoutTenantId() {
+  void testQueryProcessDefinitionWithoutTenantId() {
     given()
       .queryParam("processDefinitionWithoutTenantId", true)
     .then()
@@ -1422,7 +1437,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testQueryProcessDefinitionWithoutTenantIdAsPost() {
+  void testQueryProcessDefinitionWithoutTenantIdAsPost() {
     Map<String, Object> params = new HashMap<>();
     params.put("processDefinitionWithoutTenantId", true);
 
@@ -1439,7 +1454,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testQueryProcessInstanceWithIncident() {
+  void testQueryProcessInstanceWithIncident() {
     given()
       .queryParam("withIncident", true)
     .then()
@@ -1452,7 +1467,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testQueryProcessInstanceWithIncidentAsPost() {
+  void testQueryProcessInstanceWithIncidentAsPost() {
     Map<String, Object> params = new HashMap<>();
     params.put("withIncident", true);
 
@@ -1469,7 +1484,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testProcessDefinitionKeyInParameter() {
+  void testProcessDefinitionKeyInParameter() {
     given()
       .queryParam("processDefinitionKeyIn", MockProvider.EXAMPLE_KEY_LIST)
     .then().expect()
@@ -1482,7 +1497,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testProcessDefinitionKeyInPostParameter() {
+  void testProcessDefinitionKeyInPostParameter() {
     Map<String, Object> queryParameters = new HashMap<>();
     queryParameters.put("processDefinitionKeyIn", MockProvider.EXAMPLE_KEY_LIST.split(","));
 
@@ -1499,7 +1514,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testProcessDefinitionKeyNotInParameter() {
+  void testProcessDefinitionKeyNotInParameter() {
     given()
       .queryParam("processDefinitionKeyNotIn", MockProvider.EXAMPLE_KEY_LIST)
     .then().expect()
@@ -1512,7 +1527,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testProcessDefinitionKeyNotInPostParameter() {
+  void testProcessDefinitionKeyNotInPostParameter() {
     Map<String, Object> queryParameters = new HashMap<>();
     queryParameters.put("processDefinitionKeyNotIn", MockProvider.EXAMPLE_KEY_LIST.split(","));
 
@@ -1529,7 +1544,7 @@ public class ProcessInstanceRestServiceQueryTest extends
   }
 
   @Test
-  public void testOrQuery() {
+  void testOrQuery() {
     // given
     ProcessInstanceQuery query = mock(ProcessInstanceQueryImpl.class);
     when(processEngine.getRuntimeService().createProcessInstanceQuery()).thenReturn(query);

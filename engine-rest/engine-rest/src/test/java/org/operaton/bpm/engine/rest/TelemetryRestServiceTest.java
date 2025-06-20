@@ -30,23 +30,23 @@ import jakarta.ws.rs.core.Response.Status;
 
 import org.operaton.bpm.engine.ManagementService;
 import org.operaton.bpm.engine.rest.helper.MockProvider;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 import org.operaton.bpm.engine.telemetry.ApplicationServer;
 import org.operaton.bpm.engine.telemetry.Database;
 import org.operaton.bpm.engine.telemetry.Internals;
 import org.operaton.bpm.engine.telemetry.Jdk;
 import org.operaton.bpm.engine.telemetry.Product;
 import org.operaton.bpm.engine.telemetry.TelemetryData;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 
 import io.restassured.http.ContentType;
 
 public class TelemetryRestServiceTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String TELEMETRY_URL = TEST_RESOURCE_ROOT_PATH +  TelemetryRestService.PATH;
   protected static final String TELEMETRY_CONFIG_URL = TELEMETRY_URL + "/configuration";
@@ -55,14 +55,14 @@ public class TelemetryRestServiceTest extends AbstractRestServiceTest {
   protected ManagementService managementServiceMock;
 
 
-  @Before
-  public void setupMocks() {
+  @BeforeEach
+  void setupMocks() {
     managementServiceMock = mock(ManagementService.class);
     when(processEngine.getManagementService()).thenReturn(managementServiceMock);
   }
 
   @Test
-  public void shouldDisableTelemetry() {
+  void shouldDisableTelemetry() {
     Map<String, Object> requestBody = new HashMap<>();
     requestBody.put("enableTelemetry", false);
 
@@ -79,7 +79,7 @@ public class TelemetryRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldFetchDisabledTelemetryConfiguration() {
+  void shouldFetchDisabledTelemetryConfiguration() {
     when(managementServiceMock.isTelemetryEnabled()).thenReturn(false);
 
     given()
@@ -95,7 +95,7 @@ public class TelemetryRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldGetTelemetryData() {
+  void shouldGetTelemetryData() {
     when(managementServiceMock.getTelemetryData()).thenReturn(MockProvider.EXAMPLE_TELEMETRY_DATA);
 
     given()
@@ -129,7 +129,7 @@ public class TelemetryRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldGetMinimalTelemetryData() {
+  void shouldGetMinimalTelemetryData() {
 
     TelemetryData telemetryData = mock(TelemetryData.class);
     when(telemetryData.getInstallation()).thenReturn(MockProvider.EXAMPLE_TELEMETRY_INSTALLATION_ID);

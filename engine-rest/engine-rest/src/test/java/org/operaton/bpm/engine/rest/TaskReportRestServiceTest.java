@@ -17,8 +17,9 @@
 package org.operaton.bpm.engine.rest;
 
 import org.operaton.bpm.engine.AuthorizationException;
+import java.util.Map;
 import org.operaton.bpm.engine.rest.dto.converter.TaskReportResultToCsvConverter;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 import org.operaton.bpm.engine.task.TaskCountByCandidateGroupResult;
 import org.operaton.bpm.engine.task.TaskReport;
 import static org.operaton.bpm.engine.rest.helper.MockProvider.EXAMPLE_GROUP_ID;
@@ -30,10 +31,10 @@ import java.util.List;
 
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.path.json.JsonPath.from;
@@ -50,16 +51,16 @@ import static org.mockito.Mockito.when;
  */
 public class TaskReportRestServiceTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String TASK_REPORT_URL = TEST_RESOURCE_ROOT_PATH + "/task/report";
   protected static final String CANDIDATE_GROUP_REPORT_URL = TASK_REPORT_URL + "/candidate-group-count";
 
   protected TaskReport mockedReportQuery;
 
-  @Before
-  public void setUpRuntimeData() {
+  @BeforeEach
+  void setUpRuntimeData() {
     mockedReportQuery = setUpMockHistoricProcessInstanceReportQuery();
   }
 
@@ -75,7 +76,7 @@ public class TaskReportRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testEmptyReport() {
+  void testEmptyReport() {
     given()
     .then()
       .expect()
@@ -89,7 +90,7 @@ public class TaskReportRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testMissingAuthorization() {
+  void testMissingAuthorization() {
     String message = "not authorized";
     when(mockedReportQuery.taskCountByCandidateGroup()).thenThrow(new AuthorizationException(message));
 
@@ -105,7 +106,7 @@ public class TaskReportRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testTaskCountByCandidateGroupReport() {
+  void testTaskCountByCandidateGroupReport() {
     Response response = given()
       .then()
       .expect()
@@ -115,20 +116,20 @@ public class TaskReportRestServiceTest extends AbstractRestServiceTest {
       .get(CANDIDATE_GROUP_REPORT_URL);
 
     String content = response.asString();
-    List<String> reports = from(content).getList("");
-    Assert.assertEquals("There should be one report returned.", 1, reports.size());
+    List<Map<String, Object>> reports = from(content).getList("");
+    Assertions.assertEquals(1, reports.size(), "There should be one report returned.");
     assertThat(reports.get(0)).as("The returned report should not be null.").isNotNull();
 
     String returnedGroup = from(content).getString("[0].groupName");
     int returnedCount = from(content).getInt("[0].taskCount");
 
-    Assert.assertEquals(EXAMPLE_GROUP_ID, returnedGroup);
-    Assert.assertEquals(EXAMPLE_TASK_COUNT_BY_CANDIDATE_GROUP, returnedCount);
+    Assertions.assertEquals(EXAMPLE_GROUP_ID, returnedGroup);
+    Assertions.assertEquals(EXAMPLE_TASK_COUNT_BY_CANDIDATE_GROUP, returnedCount);
   }
 
 
   @Test
-  public void testEmptyCsvReport() {
+  void testEmptyCsvReport() {
     given()
       .accept("text/csv")
     .then()
@@ -143,7 +144,7 @@ public class TaskReportRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testCsvTaskCountByCandidateGroupReport() {
+  void testCsvTaskCountByCandidateGroupReport() {
     Response response = given()
         .accept("text/csv")
       .then()
@@ -163,7 +164,7 @@ public class TaskReportRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testApplicationCsvTaskCountByCandidateGroupReport() {
+  void testApplicationCsvTaskCountByCandidateGroupReport() {
     Response response = given()
         .accept("application/csv")
       .then()

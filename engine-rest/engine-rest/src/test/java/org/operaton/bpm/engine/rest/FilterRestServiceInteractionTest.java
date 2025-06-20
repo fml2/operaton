@@ -18,6 +18,25 @@ package org.operaton.bpm.engine.rest;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.path.json.JsonPath.from;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.Matchers.emptyOrNullString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.operaton.bpm.engine.authorization.Authorization.ANY;
 import static org.operaton.bpm.engine.authorization.Permissions.DELETE;
 import static org.operaton.bpm.engine.authorization.Permissions.READ;
@@ -49,25 +68,6 @@ import static org.operaton.bpm.engine.rest.helper.MockProvider.mockFilter;
 import static org.operaton.bpm.engine.rest.helper.MockProvider.mockVariableInstance;
 import static org.operaton.bpm.engine.rest.helper.TaskQueryMatcher.hasName;
 import static org.operaton.bpm.engine.variable.Variables.stringValue;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.Matchers.emptyOrNullString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.hamcrest.MockitoHamcrest.argThat;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.isNull;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -76,9 +76,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.ws.rs.HttpMethod;
-import jakarta.ws.rs.core.Response.Status;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.operaton.bpm.engine.AuthorizationService;
 import org.operaton.bpm.engine.FilterService;
 import org.operaton.bpm.engine.IdentityService;
@@ -100,27 +102,24 @@ import org.operaton.bpm.engine.rest.dto.VariableValueDto;
 import org.operaton.bpm.engine.rest.dto.task.TaskQueryDto;
 import org.operaton.bpm.engine.rest.helper.MockProvider;
 import org.operaton.bpm.engine.rest.helper.MockTaskBuilder;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 import org.operaton.bpm.engine.runtime.VariableInstance;
 import org.operaton.bpm.engine.task.Task;
 import org.operaton.bpm.engine.task.TaskQuery;
 import org.operaton.bpm.engine.variable.type.ValueType;
 import org.operaton.bpm.engine.variable.value.TypedValue;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.mockito.Mockito;
 
 import io.restassured.response.Response;
-import org.mockito.ArgumentCaptor;
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.core.Response.Status;
 
 /**
  * @author Sebastian Menski
  */
 public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   public static final String FILTER_URL = TEST_RESOURCE_ROOT_PATH + FilterRestService.PATH;
   public static final String SINGLE_FILTER_URL = FILTER_URL + "/{id}";
@@ -152,8 +151,8 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   protected VariableInstanceQueryImpl variableInstanceQueryMock;
   protected ProcessEngineConfiguration processEngineConfigurationMock;
 
-  @Before
-  public void setUpRuntimeData() {
+  @BeforeEach
+  void setUpRuntimeData() {
     filterServiceMock = mock(FilterService.class);
 
     when(processEngine.getFilterService()).thenReturn(filterServiceMock);
@@ -230,7 +229,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetFilter() {
+  void testGetFilter() {
     given()
       .pathParam("id", EXAMPLE_FILTER_ID)
     .then().expect()
@@ -243,7 +242,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetNonExistingFilter() {
+  void testGetNonExistingFilter() {
     given()
       .pathParam("id", MockProvider.NON_EXISTING_ID)
     .then().expect()
@@ -255,7 +254,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetFilterWithTaskQuery() {
+  void testGetFilterWithTaskQuery() {
     TaskQueryImpl query = mock(TaskQueryImpl.class);
     when(query.getAssignee()).thenReturn(MockProvider.EXAMPLE_TASK_ASSIGNEE_NAME);
     when(query.getAssigneeLike()).thenReturn(MockProvider.EXAMPLE_TASK_ASSIGNEE_NAME);
@@ -348,7 +347,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldReturnWithoutDueDateForFilterWithEnabledOptionInTaskQuery() {
+  void shouldReturnWithoutDueDateForFilterWithEnabledOptionInTaskQuery() {
     TaskQueryImpl query = mock(TaskQueryImpl.class);
     when(query.isWithoutDueDate()).thenReturn(true);
 
@@ -366,7 +365,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetFilterWithCandidateGroupQuery() {
+  void testGetFilterWithCandidateGroupQuery() {
     TaskQueryImpl query = new TaskQueryImpl();
     query.taskCandidateGroup("abc");
     Filter filter = new FilterEntity("Task").setName("test").setQuery(query);
@@ -384,7 +383,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetFilterWithCandidateUserQuery() {
+  void testGetFilterWithCandidateUserQuery() {
     TaskQueryImpl query = new TaskQueryImpl();
     query.taskCandidateUser("abc");
     Filter filter = new FilterEntity("Task").setName("test").setQuery(query);
@@ -402,7 +401,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetFilterWithCandidateIncludeAssignedTasks() {
+  void testGetFilterWithCandidateIncludeAssignedTasks() {
     TaskQueryImpl query = new TaskQueryImpl();
     query.taskCandidateUser("abc").includeAssignedTasks();
     Filter filter = new FilterEntity("Task").setName("test").setQuery(query);
@@ -420,7 +419,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetFilterWithoutTenantIdQuery() {
+  void testGetFilterWithoutTenantIdQuery() {
     TaskQueryImpl query = new TaskQueryImpl();
     query.withoutTenantId();
     Filter filter = new FilterEntity("Task").setName("test").setQuery(query);
@@ -436,7 +435,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetFilterWithoutSorting() {
+  void testGetFilterWithoutSorting() {
     TaskQuery query = new TaskQueryImpl();
     Filter filter = new FilterEntity("Task").setName("test").setQuery(query);
     when(filterServiceMock.getFilter(EXAMPLE_FILTER_ID)).thenReturn(filter);
@@ -451,7 +450,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetFilterWithSingleSorting() {
+  void testGetFilterWithSingleSorting() {
     TaskQuery query = new TaskQueryImpl()
       .orderByTaskName().desc();
 
@@ -473,7 +472,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetFilterWithMultipleSorting() {
+  void testGetFilterWithMultipleSorting() {
     TaskQuery query = new TaskQueryImpl()
       .orderByDueDate().asc()
       .orderByCaseExecutionId().desc();
@@ -497,7 +496,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetFilterWithAllPropertiesSorting() {
+  void testGetFilterWithAllPropertiesSorting() {
     TaskQuery query = new TaskQueryImpl()
       .orderByProcessInstanceId().asc()
       .orderByCaseInstanceId().asc()
@@ -545,7 +544,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetFilterWithVariableTypeSorting() {
+  void testGetFilterWithVariableTypeSorting() {
     TaskQuery query = new TaskQueryImpl()
       .orderByExecutionVariable("foo", ValueType.STRING).asc()
       .orderByProcessVariable("foo", ValueType.STRING).asc()
@@ -575,7 +574,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetFilterWithVariableValueTypeSorting() {
+  void testGetFilterWithVariableValueTypeSorting() {
     TaskQuery query = new TaskQueryImpl()
       .orderByExecutionVariable("foo", ValueType.STRING).asc()
       .orderByExecutionVariable("foo", ValueType.INTEGER).asc()
@@ -609,7 +608,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetFilterWithVariableSortOrderSorting() {
+  void testGetFilterWithVariableSortOrderSorting() {
     TaskQuery query = new TaskQueryImpl()
       .orderByExecutionVariable("foo", ValueType.STRING).asc()
       .orderByExecutionVariable("foo", ValueType.STRING).desc();
@@ -653,7 +652,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testGetFilterWithFollowUpBeforeOrNotExistentExpression() {
+  void testGetFilterWithFollowUpBeforeOrNotExistentExpression() {
     TaskQueryImpl query = new TaskQueryImpl();
     query.followUpBeforeOrNotExistentExpression("#{now()}");
     Filter filter = new FilterEntity("Task").setName("test").setQuery(query);
@@ -669,7 +668,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testCreateFilter() {
+  void testCreateFilter() {
     Map<String, Object> json = toFilterRequest(MockProvider.createMockFilter());
 
     given()
@@ -686,7 +685,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testCreateInvalidFilter() {
+  void testCreateInvalidFilter() {
     given()
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(EMPTY_JSON_OBJECT)
@@ -697,7 +696,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUpdateFilter() {
+  void testUpdateFilter() {
     Map<String, Object> json = toFilterRequest(MockProvider.createMockFilter());
 
     given()
@@ -714,7 +713,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testInvalidResourceType() {
+  void testInvalidResourceType() {
     Map<String, Object> json = toFilterRequest(MockProvider.createMockFilter());
     json.put("resourceType", "invalid");
 
@@ -744,7 +743,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUpdateNonExistingFilter() {
+  void testUpdateNonExistingFilter() {
     given()
       .pathParam("id", MockProvider.NON_EXISTING_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
@@ -756,7 +755,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUpdateInvalidFilter() {
+  void testUpdateInvalidFilter() {
     given()
       .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
@@ -768,7 +767,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testDeleteFilter() {
+  void testDeleteFilter() {
     given()
       .pathParam("id", EXAMPLE_FILTER_ID)
     .then().expect()
@@ -780,7 +779,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testDeleteNonExistingFilter() {
+  void testDeleteNonExistingFilter() {
     given()
       .pathParam("id", MockProvider.NON_EXISTING_ID)
     .then().expect()
@@ -790,7 +789,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteSingleResult() {
+  void testExecuteSingleResult() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -803,7 +802,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testEmptySingleResult() {
+  void testEmptySingleResult() {
     when(filterServiceMock.singleResult(any(), any())).thenReturn(null);
 
     given()
@@ -818,7 +817,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testInvalidSingleResult() {
+  void testInvalidSingleResult() {
     doThrow(new ProcessEngineException("More than one result found"))
       .when(filterServiceMock).singleResult(any(), any());
 
@@ -834,7 +833,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteHalSingleResult() {
+  void testExecuteHalSingleResult() {
     given()
       .header(ACCEPT_HAL_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -847,7 +846,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testEmptyHalSingleResult() {
+  void testEmptyHalSingleResult() {
     when(filterServiceMock.singleResult(any(), any())).thenReturn(null);
 
     given()
@@ -864,7 +863,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testInvalidHalSingleResult() {
+  void testInvalidHalSingleResult() {
     doThrow(new ProcessEngineException("More than one result found"))
       .when(filterServiceMock).singleResult(any(), any());
 
@@ -880,7 +879,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteSingleResultOfNonExistingFilter() {
+  void testExecuteSingleResultOfNonExistingFilter() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", MockProvider.NON_EXISTING_ID)
@@ -893,7 +892,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteSingleResultAsPost() {
+  void testExecuteSingleResultAsPost() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -908,7 +907,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteHalSingleResultAsPost() {
+  void testExecuteHalSingleResultAsPost() {
     given()
       .header(ACCEPT_HAL_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -923,7 +922,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteSingleResultInvalidWithExtendingQuery() {
+  void testExecuteSingleResultInvalidWithExtendingQuery() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -936,7 +935,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteSingleResultWithExtendingQuery() {
+  void testExecuteSingleResultWithExtendingQuery() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -952,7 +951,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteSingleResultWithExtendingOrQuery() {
+  void testExecuteSingleResultWithExtendingOrQuery() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -970,7 +969,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteList() {
+  void testExecuteList() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -984,7 +983,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testEmptyList() {
+  void testEmptyList() {
     when(filterServiceMock.list(any(), any())).thenReturn(Collections.emptyList());
 
     given()
@@ -1000,7 +999,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteHalList() {
+  void testExecuteHalList() {
     given()
       .header(ACCEPT_HAL_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -1014,7 +1013,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testEmptyHalList() {
+  void testEmptyHalList() {
     when(filterServiceMock.list(any(), any())).thenReturn(Collections.emptyList());
     when(filterServiceMock.count(any(), any())).thenReturn(0L);
 
@@ -1033,7 +1032,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteListOfNonExistingFilter() {
+  void testExecuteListOfNonExistingFilter() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", MockProvider.NON_EXISTING_ID)
@@ -1046,7 +1045,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteListWithPagination() {
+  void testExecuteListWithPagination() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -1062,7 +1061,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteListAsPost() {
+  void testExecuteListAsPost() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -1078,7 +1077,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteHalListAsPost() {
+  void testExecuteHalListAsPost() {
     given()
       .header(ACCEPT_HAL_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -1094,7 +1093,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteListAsPostWithPagination() {
+  void testExecuteListAsPostWithPagination() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -1112,7 +1111,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteListWithExtendingQuery() {
+  void testExecuteListWithExtendingQuery() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -1128,7 +1127,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteListWithExtendingQueryWithPagination() {
+  void testExecuteListWithExtendingQueryWithPagination() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -1146,7 +1145,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteListWithInvalidExtendingQuery() {
+  void testExecuteListWithInvalidExtendingQuery() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -1159,7 +1158,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteCount() {
+  void testExecuteCount() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -1173,7 +1172,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteCountOfNonExistingFilter() {
+  void testExecuteCountOfNonExistingFilter() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", MockProvider.NON_EXISTING_ID)
@@ -1186,7 +1185,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteCountAsPost() {
+  void testExecuteCountAsPost() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -1202,7 +1201,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteCountWithExtendingQuery() {
+  void testExecuteCountWithExtendingQuery() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -1218,7 +1217,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testExecuteCountWithInvalidExtendingQuery() {
+  void testExecuteCountWithInvalidExtendingQuery() {
     given()
       .header(ACCEPT_JSON_HEADER)
       .pathParam("id", EXAMPLE_FILTER_ID)
@@ -1232,7 +1231,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
 
 
   @Test
-  public void testAnonymousFilterOptions() {
+  void testAnonymousFilterOptions() {
     String fullFilterUrl = "http://localhost:" + PORT + FILTER_URL;
 
     // anonymity means the identityService returns a null authentication, so no need to mock here
@@ -1265,7 +1264,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testRestrictedFilterOptions() {
+  void testRestrictedFilterOptions() {
     String fullFilterUrl = "http://localhost:" + PORT + FILTER_URL;
 
     Authentication authentication = new Authentication(MockProvider.EXAMPLE_USER_ID, null);
@@ -1297,7 +1296,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testFilterOptionsWithDisabledAuthorization() {
+  void testFilterOptionsWithDisabledAuthorization() {
     String fullFilterUrl = "http://localhost:" + PORT + FILTER_URL;
 
     when(processEngineConfigurationMock.isAuthorizationEnabled()).thenReturn(false);
@@ -1327,7 +1326,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testAnonymousFilterResourceOptions() {
+  void testAnonymousFilterResourceOptions() {
     String fullFilterUrl = "http://localhost:" + PORT + FILTER_URL + "/" + EXAMPLE_FILTER_ID;
 
     // anonymity means the identityService returns a null authentication, so no need to mock here
@@ -1385,7 +1384,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testFilterResourceOptionsUnauthorized() {
+  void testFilterResourceOptionsUnauthorized() {
     Authentication authentication = new Authentication(MockProvider.EXAMPLE_USER_ID, null);
     when(identityServiceMock.getCurrentAuthentication()).thenReturn(authentication);
 
@@ -1413,7 +1412,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testFilterResourceOptionsUpdateUnauthorized() {
+  void testFilterResourceOptionsUpdateUnauthorized() {
     String fullFilterUrl = "http://localhost:" + PORT + FILTER_URL + "/" + EXAMPLE_FILTER_ID;
 
     Authentication authentication = new Authentication(MockProvider.EXAMPLE_USER_ID, null);
@@ -1474,7 +1473,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testFilterResourceOptionsWithAuthorizationDisabled() {
+  void testFilterResourceOptionsWithAuthorizationDisabled() {
     String fullFilterUrl = "http://localhost:" + PORT + FILTER_URL + "/" + EXAMPLE_FILTER_ID;
 
     when(processEngineConfigurationMock.isAuthorizationEnabled()).thenReturn(false);
@@ -1529,7 +1528,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testHalTaskQueryWithWrongFormatVariablesProperties() {
+  void testHalTaskQueryWithWrongFormatVariablesProperties() {
     // mock properties with variable name list in wrong format
     Map<String, Object> properties = new HashMap<>();
     properties.put("variables", "foo");
@@ -1552,7 +1551,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testHalTaskQueryWithEmptyVariablesProperties() {
+  void testHalTaskQueryWithEmptyVariablesProperties() {
     // mock properties with variable name list in wrong format
     Map<String, Object> properties = new HashMap<>();
     properties.put("variables", Collections.emptyList());
@@ -1575,7 +1574,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testHalTaskQueryWithVariableNotSetOnTask() {
+  void testHalTaskQueryWithVariableNotSetOnTask() {
     // mock filter with variable names set
     mockFilterWithVariableNames();
 
@@ -1611,7 +1610,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testHalTaskQueryWithAdditionalVariables() {
+  void testHalTaskQueryWithAdditionalVariables() {
     // mock filter with variable names set
     mockFilterWithVariableNames();
 
@@ -1671,7 +1670,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testHalTaskListQueryWithAdditionalVariables() {
+  void testHalTaskListQueryWithAdditionalVariables() {
     // mock filter with variable names set
     mockFilterWithVariableNames();
 
@@ -1766,7 +1765,7 @@ public class FilterRestServiceInteractionTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testHalTaskListCount() {
+  void testHalTaskListCount() {
     // mock resulting task
     List<Task> tasks = Arrays.asList(
       createTaskMock(TASK_A_ID, PROCESS_INSTANCE_A_ID, EXECUTION_A_ID, null, null),

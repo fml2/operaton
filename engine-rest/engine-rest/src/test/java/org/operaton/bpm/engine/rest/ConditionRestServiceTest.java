@@ -41,13 +41,13 @@ import org.operaton.bpm.engine.impl.ConditionEvaluationBuilderImpl;
 import org.operaton.bpm.engine.rest.exception.InvalidRequestException;
 import org.operaton.bpm.engine.rest.helper.MockProvider;
 import org.operaton.bpm.engine.rest.util.VariablesBuilder;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 import org.operaton.bpm.engine.runtime.ConditionEvaluationBuilder;
 import org.operaton.bpm.engine.runtime.ProcessInstance;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import io.restassured.response.Response;
@@ -56,15 +56,15 @@ public class ConditionRestServiceTest extends AbstractRestServiceTest {
 
   protected static final String CONDITION_URL = TEST_RESOURCE_ROOT_PATH + ConditionRestService.PATH;
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   private RuntimeService runtimeServiceMock;
   private ConditionEvaluationBuilder conditionEvaluationBuilderMock;
   private List<ProcessInstance> processInstancesMock;
 
-  @Before
-  public void setupMocks() {
+  @BeforeEach
+  void setupMocks() {
     runtimeServiceMock = mock(RuntimeService.class);
     when(processEngine.getRuntimeService()).thenReturn(runtimeServiceMock);
 
@@ -81,7 +81,7 @@ public class ConditionRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testConditionEvaluationOnlyVariables() {
+  void testConditionEvaluationOnlyVariables() {
     Map<String, Object> parameters = new HashMap<>();
     Map<String, Object> variables = VariablesBuilder
         .create()
@@ -111,7 +111,7 @@ public class ConditionRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testConditionEvaluationWithProcessDefinition() {
+  void testConditionEvaluationWithProcessDefinition() {
     Map<String, Object> parameters = new HashMap<>();
     Map<String, Object> variables = VariablesBuilder
         .create()
@@ -134,7 +134,7 @@ public class ConditionRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testConditionEvaluationWithBusinessKey() {
+  void testConditionEvaluationWithBusinessKey() {
     Map<String, Object> parameters = new HashMap<>();
     Map<String, Object> variables = VariablesBuilder
         .create()
@@ -156,7 +156,7 @@ public class ConditionRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testConditionEvaluationWithTenantId() {
+  void testConditionEvaluationWithTenantId() {
     Map<String, Object> parameters = new HashMap<>();
     Map<String, Object> variables = VariablesBuilder
         .create()
@@ -179,7 +179,7 @@ public class ConditionRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testConditionEvaluationWithoutTenantId() {
+  void testConditionEvaluationWithoutTenantId() {
     Map<String, Object> parameters = new HashMap<>();
     Map<String, Object> variables = VariablesBuilder
         .create()
@@ -202,7 +202,7 @@ public class ConditionRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testConditionEvaluationFailingInvalidTenantParameters() {
+  void testConditionEvaluationFailingInvalidTenantParameters() {
     Map<String, Object> parameters = new HashMap<>();
     Map<String, Object> variables = VariablesBuilder
         .create()
@@ -224,7 +224,7 @@ public class ConditionRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testConditionEvaluationThrowsAuthorizationException() {
+  void testConditionEvaluationThrowsAuthorizationException() {
     Map<String, Object> parameters = new HashMap<>();
     Map<String, Object> variables = VariablesBuilder
         .create()
@@ -247,7 +247,7 @@ public class ConditionRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldReturnErrorCode() {
+  void shouldReturnErrorCode() {
     Map<String, Object> parameters = new HashMap<>();
     Map<String, Object> variables = VariablesBuilder
         .create()
@@ -271,12 +271,12 @@ public class ConditionRestServiceTest extends AbstractRestServiceTest {
   }
 
   protected void checkResult(String content) {
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID, from(content).get("[" + 0 + "].id"));
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_ID, from(content).get("[" + 0+ "].definitionId"));
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY, from(content).get("[" + 0+ "].definitionKey"));
-    Assert.assertEquals(MockProvider.ANOTHER_EXAMPLE_PROCESS_INSTANCE_ID, from(content).get("[" + 1 + "].id"));
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_ID, from(content).get("[" + 1+ "].definitionId"));
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY, from(content).get("[" + 1+ "].definitionKey"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID, from(content).get("[" + 0 + "].id"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_ID, from(content).get("[" + 0+ "].definitionId"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY, from(content).get("[" + 0+ "].definitionKey"));
+    Assertions.assertEquals(MockProvider.ANOTHER_EXAMPLE_PROCESS_INSTANCE_ID, from(content).get("[" + 1 + "].id"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_ID, from(content).get("[" + 1+ "].definitionId"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY, from(content).get("[" + 1+ "].definitionKey"));
     
   }
 

@@ -16,29 +16,6 @@
  */
 package org.operaton.bpm.engine.rest.history;
 
-import io.restassured.http.ContentType;
-import io.restassured.response.Response;
-import org.operaton.bpm.engine.history.HistoricExternalTaskLog;
-import org.operaton.bpm.engine.history.HistoricExternalTaskLogQuery;
-import org.operaton.bpm.engine.rest.AbstractRestServiceTest;
-import org.operaton.bpm.engine.rest.exception.InvalidRequestException;
-import org.operaton.bpm.engine.rest.helper.MockProvider;
-import org.operaton.bpm.engine.rest.util.OrderingBuilder;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.mockito.InOrder;
-import org.mockito.Mockito;
-
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response.Status;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import static io.restassured.RestAssured.expect;
 import static io.restassured.RestAssured.given;
 import static io.restassured.path.json.JsonPath.from;
@@ -46,13 +23,41 @@ import static junit.framework.TestCase.assertNotNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
+import org.operaton.bpm.engine.history.HistoricExternalTaskLog;
+import org.operaton.bpm.engine.history.HistoricExternalTaskLogQuery;
+import org.operaton.bpm.engine.rest.AbstractRestServiceTest;
+import org.operaton.bpm.engine.rest.exception.InvalidRequestException;
+import org.operaton.bpm.engine.rest.helper.MockProvider;
+import org.operaton.bpm.engine.rest.util.OrderingBuilder;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
+
+import io.restassured.http.ContentType;
+import io.restassured.response.Response;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response.Status;
 
 public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String HISTORIC_EXTERNAL_TASK_LOG_RESOURCE_URL = TEST_RESOURCE_ROOT_PATH + "/history/external-task-log";
   protected static final String HISTORIC_EXTERNAL_TASK_LOG_COUNT_RESOURCE_URL = HISTORIC_EXTERNAL_TASK_LOG_RESOURCE_URL + "/count";
@@ -62,8 +67,8 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
 
   protected HistoricExternalTaskLogQuery mockedQuery;
 
-  @Before
-  public void setUpRuntimeData() {
+  @BeforeEach
+  void setUpRuntimeData() {
     mockedQuery = setUpMockHistoricExternalTaskLogQuery(MockProvider.createMockHistoricExternalTaskLogs());
   }
 
@@ -78,7 +83,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testEmptyQuery() {
+  void testEmptyQuery() {
     String queryKey = "";
     given()
       .queryParam("processDefinitionKey", queryKey)
@@ -92,7 +97,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testNoParametersQuery() {
+  void testNoParametersQuery() {
     expect()
       .statusCode(Status.OK.getStatusCode())
     .when()
@@ -103,7 +108,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testNoParametersQueryAsPost() {
+  void testNoParametersQueryAsPost() {
     given()
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(EMPTY_JSON_OBJECT)
@@ -118,7 +123,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testInvalidSortingOptions() {
+  void testInvalidSortingOptions() {
     executeAndVerifySorting("anInvalidSortByOption", "asc", Status.BAD_REQUEST);
     executeAndVerifySorting("definitionId", "anInvalidSortOrderOption", Status.BAD_REQUEST);
   }
@@ -135,7 +140,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testSortByParameterOnly() {
+  void testSortByParameterOnly() {
     given()
       .queryParam("sortBy", "processDefinitionId")
     .then()
@@ -149,7 +154,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testSortOrderParameterOnly() {
+  void testSortOrderParameterOnly() {
     given()
       .queryParam("sortOrder", "asc")
     .then()
@@ -163,7 +168,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testSortingParameters() {
+  void testSortingParameters() {
     InOrder inOrder = Mockito.inOrder(mockedQuery);
     executeAndVerifySorting("timestamp", "asc", Status.OK);
     inOrder.verify(mockedQuery).orderByTimestamp();
@@ -296,7 +301,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testSecondarySortingAsPost() {
+  void testSecondarySortingAsPost() {
     InOrder inOrder = Mockito.inOrder(mockedQuery);
     Map<String, Object> json = new HashMap<>();
     json.put("sorting", OrderingBuilder.create()
@@ -315,7 +320,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testSuccessfulPagination() {
+  void testSuccessfulPagination() {
     int firstResult = 0;
     int maxResults = 10;
 
@@ -332,7 +337,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testMissingFirstResultParameter() {
+  void testMissingFirstResultParameter() {
     int maxResults = 10;
 
     given()
@@ -347,7 +352,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testMissingMaxResultsParameter() {
+  void testMissingMaxResultsParameter() {
     int firstResult = 10;
 
     given()
@@ -362,7 +367,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testQueryCount() {
+  void testQueryCount() {
     expect()
       .statusCode(Status.OK.getStatusCode())
       .body("count", equalTo(1))
@@ -374,7 +379,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
 
 
   @Test
-  public void testQueryCountForPost() {
+  void testQueryCountForPost() {
     given()
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(EMPTY_JSON_OBJECT)
@@ -388,7 +393,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testSimpleHistoricExternalTaskLogQuery() {
+  void testSimpleHistoricExternalTaskLogQuery() {
     String processInstanceId = MockProvider.EXAMPLE_PROCESS_INSTANCE_ID;
 
     Response response = given()
@@ -404,8 +409,8 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
     inOrder.verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> logs = from(content).getList("");
-    assertEquals("There should be one historic externalTask log returned.", 1, logs.size());
+    List<Map<String, Object>> logs = from(content).getList("");
+    assertEquals(1, logs.size(), "There should be one historic externalTask log returned.");
     assertNotNull("The returned historic externalTask log should not be null.", logs.get(0));
 
     String returnedId = from(content).getString("[0].id");
@@ -448,7 +453,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testSimpleHistoricExternalTaskLogQueryAsPost() {
+  void testSimpleHistoricExternalTaskLogQueryAsPost() {
     String processInstanceId = MockProvider.EXAMPLE_HISTORIC_EXTERNAL_TASK_LOG_PROC_INST_ID;
 
     Map<String, Object> json = new HashMap<>();
@@ -469,8 +474,8 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
     inOrder.verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> logs = from(content).getList("");
-    assertEquals("There should be one historic externalTask log returned.", 1, logs.size());
+    List<Map<String, Object>> logs = from(content).getList("");
+    assertEquals(1, logs.size(), "There should be one historic externalTask log returned.");
     assertNotNull("The returned historic externalTask log should not be null.", logs.get(0));
 
     String returnedId = from(content).getString("[0].id");
@@ -517,7 +522,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testStringParameters() {
+  void testStringParameters() {
     Map<String, String> stringQueryParameters = getCompleteStringQueryParameters();
 
     given()
@@ -532,7 +537,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testStringParametersAsPost() {
+  void testStringParametersAsPost() {
     Map<String, String> stringQueryParameters = getCompleteStringQueryParameters();
 
     given()
@@ -578,7 +583,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testListParameters() {
+  void testListParameters() {
     String anActId = "anActId";
     String anotherActId = "anotherActId";
 
@@ -605,7 +610,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testListParametersAsPost() {
+  void testListParametersAsPost() {
     String anActId = "anActId";
     String anotherActId = "anotherActId";
 
@@ -636,7 +641,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testBooleanParameters() {
+  void testBooleanParameters() {
     Map<String, Boolean> params = getCompleteBooleanQueryParameters();
 
     given()
@@ -651,7 +656,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testBooleanParametersAsPost() {
+  void testBooleanParametersAsPost() {
     Map<String, Boolean> params = getCompleteBooleanQueryParameters();
 
     given()
@@ -687,7 +692,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testIntegerParameters() {
+  void testIntegerParameters() {
     Map<String, Object> params = getCompleteIntegerQueryParameters();
 
     given()
@@ -702,7 +707,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testIntegerParametersAsPost() {
+  void testIntegerParametersAsPost() {
     Map<String, Object> params = getCompleteIntegerQueryParameters();
 
     given()
@@ -735,7 +740,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testTenantIdListParameter() {
+  void testTenantIdListParameter() {
     mockedQuery = setUpMockHistoricExternalTaskLogQuery(createMockHistoricExternalTaskLogsTwoTenants());
 
     Response response =
@@ -751,7 +756,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> externalTaskLogs = from(content).getList("");
+    List<Map<String, Object>> externalTaskLogs = from(content).getList("");
     assertThat(externalTaskLogs).hasSize(2);
 
     String returnedTenantId1 = from(content).getString("[0].tenantId");
@@ -762,7 +767,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testTenantIdListPostParameter() {
+  void testTenantIdListPostParameter() {
     mockedQuery = setUpMockHistoricExternalTaskLogQuery(createMockHistoricExternalTaskLogsTwoTenants());
 
     Map<String, Object> queryParameters = new HashMap<>();
@@ -781,7 +786,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> externalTaskLogs = from(content).getList("");
+    List<Map<String, Object>> externalTaskLogs = from(content).getList("");
     assertThat(externalTaskLogs).hasSize(2);
 
     String returnedTenantId1 = from(content).getString("[0].tenantId");
@@ -792,7 +797,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testQueryWithoutTenantIdQueryParameter() {
+  void testQueryWithoutTenantIdQueryParameter() {
     // given
     mockedQuery = setUpMockHistoricExternalTaskLogQuery(Collections.singletonList(MockProvider.createMockHistoricExternalTaskLog(null)));
 
@@ -809,7 +814,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> definitions = from(content).getList("");
+    List<Map<String, Object>> definitions = from(content).getList("");
     assertThat(definitions).hasSize(1);
 
     String returnedTenantId = from(content).getString("[0].tenantId");
@@ -817,7 +822,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
   }
 
   @Test
-  public void testQueryWithoutTenantIdPostParameter() {
+  void testQueryWithoutTenantIdPostParameter() {
     // given
     mockedQuery = setUpMockHistoricExternalTaskLogQuery(Collections.singletonList(MockProvider.createMockHistoricExternalTaskLog(null)));
     Map<String, Object> queryParameters = Collections.singletonMap("withoutTenantId", (Object) true);
@@ -836,7 +841,7 @@ public class HistoricExternalTaskLogRestServiceQueryTest extends AbstractRestSer
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> definitions = from(content).getList("");
+    List<Map<String, Object>> definitions = from(content).getList("");
     assertThat(definitions).hasSize(1);
 
     String returnedTenantId = from(content).getString("[0].tenantId");

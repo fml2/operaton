@@ -35,18 +35,18 @@ import org.operaton.bpm.engine.exception.NotFoundException;
 import org.operaton.bpm.engine.exception.NotValidException;
 import org.operaton.bpm.engine.impl.RuntimeServiceImpl;
 import org.operaton.bpm.engine.rest.helper.MockProvider;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 import org.operaton.bpm.engine.runtime.Incident;
 import org.operaton.bpm.engine.runtime.IncidentQuery;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 
 
 public class IncidentRestServiceInteractionTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String INCIDENT_URL = TEST_RESOURCE_ROOT_PATH + "/incident";
   protected static final String SINGLE_INCIDENT_URL = INCIDENT_URL + "/{id}";
@@ -55,8 +55,8 @@ public class IncidentRestServiceInteractionTest extends AbstractRestServiceTest 
   private RuntimeServiceImpl mockRuntimeService;
   private IncidentQuery mockedQuery;
 
-  @Before
-  public void setUpRuntimeData() {
+  @BeforeEach
+  void setUpRuntimeData() {
     List<Incident> incidents = MockProvider.createMockIncidents();
 
     mockedQuery = setupMockIncidentQuery(incidents);
@@ -76,7 +76,7 @@ public class IncidentRestServiceInteractionTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testGetIncident() {
+  void testGetIncident() {
 
     given()
       .pathParam("id", EXAMPLE_INCIDENT_ID)
@@ -91,7 +91,7 @@ public class IncidentRestServiceInteractionTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testGetUnexistingIncident() {
+  void testGetUnexistingIncident() {
     when(mockedQuery.singleResult()).thenReturn(null);
 
     given()
@@ -107,7 +107,7 @@ public class IncidentRestServiceInteractionTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testResolveIncident() {
+  void testResolveIncident() {
 
     given()
       .pathParam("id", EXAMPLE_INCIDENT_ID)
@@ -120,7 +120,7 @@ public class IncidentRestServiceInteractionTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void testResolveUnexistingIncident() {
+  void testResolveUnexistingIncident() {
     doThrow(new NotFoundException()).when(mockRuntimeService).resolveIncident(anyString());
 
     given()
@@ -134,7 +134,7 @@ public class IncidentRestServiceInteractionTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void shouldSetAnnotation() {
+  void shouldSetAnnotation() {
     given()
       .pathParam("id", EXAMPLE_INCIDENT_ID)
       .contentType(MediaType.APPLICATION_JSON)
@@ -149,7 +149,7 @@ public class IncidentRestServiceInteractionTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void shouldThrowNotValidExceptionWhenSetAnnotation() {
+  void shouldThrowNotValidExceptionWhenSetAnnotation() {
     doThrow(new NotValidException("expected"))
       .when(mockRuntimeService)
       .setAnnotationForIncidentById(anyString(), anyString());
@@ -165,7 +165,7 @@ public class IncidentRestServiceInteractionTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void shouldThrowAuthorizationExceptionWhenSetAnnotation() {
+  void shouldThrowAuthorizationExceptionWhenSetAnnotation() {
     doThrow(new AuthorizationException("expected"))
       .when(mockRuntimeService)
       .setAnnotationForIncidentById(anyString(), anyString());
@@ -181,7 +181,7 @@ public class IncidentRestServiceInteractionTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void shouldThrowBadRequestExceptionWhenSetAnnotation() {
+  void shouldThrowBadRequestExceptionWhenSetAnnotation() {
     doThrow(new BadUserRequestException("expected"))
       .when(mockRuntimeService)
       .setAnnotationForIncidentById(anyString(), anyString());
@@ -197,7 +197,7 @@ public class IncidentRestServiceInteractionTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void shouldClearAnnotation() {
+  void shouldClearAnnotation() {
     given()
       .pathParam("id", EXAMPLE_INCIDENT_ID)
     .then().expect()
@@ -209,7 +209,7 @@ public class IncidentRestServiceInteractionTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void shouldThrowNotValidExceptionWhenClearAnnotation() {
+  void shouldThrowNotValidExceptionWhenClearAnnotation() {
     doThrow(new NotValidException("expected"))
       .when(mockRuntimeService)
       .clearAnnotationForIncidentById(anyString());
@@ -223,7 +223,7 @@ public class IncidentRestServiceInteractionTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void shouldThrowAuthorizationExceptionWhenClearAnnotation() {
+  void shouldThrowAuthorizationExceptionWhenClearAnnotation() {
     doThrow(new AuthorizationException("expected"))
       .when(mockRuntimeService)
       .clearAnnotationForIncidentById(anyString());
@@ -237,7 +237,7 @@ public class IncidentRestServiceInteractionTest extends AbstractRestServiceTest 
   }
 
   @Test
-  public void shouldThrowBadRequestExceptionWhenClearAnnotation() {
+  void shouldThrowBadRequestExceptionWhenClearAnnotation() {
     doThrow(new BadUserRequestException("expected"))
       .when(mockRuntimeService)
       .clearAnnotationForIncidentById(anyString());

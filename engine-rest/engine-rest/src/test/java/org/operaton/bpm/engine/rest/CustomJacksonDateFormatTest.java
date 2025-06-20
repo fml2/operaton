@@ -34,21 +34,21 @@ import org.operaton.bpm.engine.impl.RuntimeServiceImpl;
 import org.operaton.bpm.engine.rest.helper.variable.EqualsPrimitiveValue;
 import org.operaton.bpm.engine.rest.mapper.JacksonConfigurator;
 import org.operaton.bpm.engine.rest.util.VariablesBuilder;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 import org.operaton.bpm.engine.variable.Variables;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import io.restassured.http.ContentType;
 
-@Ignore("See PR#52: Causes an issue resolving operaton-core-internal-dependencies")
+@Disabled("See PR#52: Causes an issue resolving operaton-core-internal-dependencies")
 public class CustomJacksonDateFormatTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String PROCESS_INSTANCE_URL = TEST_RESOURCE_ROOT_PATH + "/process-instance";
   protected static final String SINGLE_PROCESS_INSTANCE_URL = PROCESS_INSTANCE_URL + "/{id}";
@@ -61,8 +61,8 @@ public class CustomJacksonDateFormatTest extends AbstractRestServiceTest {
 
   protected RuntimeServiceImpl runtimeServiceMock;
 
-  @Before
-  public void setUpRuntimeData() {
+  @BeforeEach
+  void setUpRuntimeData() {
     runtimeServiceMock = mock(RuntimeServiceImpl.class);
 
     when(runtimeServiceMock.getVariableTyped(EXAMPLE_PROCESS_INSTANCE_ID, EXAMPLE_VARIABLE_KEY, true))
@@ -71,13 +71,13 @@ public class CustomJacksonDateFormatTest extends AbstractRestServiceTest {
     when(processEngine.getRuntimeService()).thenReturn(runtimeServiceMock);
   }
 
-  @AfterClass
-  public static void reset() {
+  @AfterAll
+  static void reset() {
     JacksonConfigurator.setDateFormatString(DEFAULT_DATE_FORMAT);
   }
 
   @Test
-  public void testGetDateVariable() {
+  void testGetDateVariable() {
     given()
         .pathParam("id", EXAMPLE_PROCESS_INSTANCE_ID)
         .pathParam("varId", EXAMPLE_VARIABLE_KEY)
@@ -90,7 +90,7 @@ public class CustomJacksonDateFormatTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testSetDateVariable() {
+  void testSetDateVariable() {
     String variableValue = TEST_DATE_FORMAT.format(TEST_DATE);
 
     Map<String, Object> variableJson = VariablesBuilder.getVariableValueMap(variableValue, "Date");

@@ -18,50 +18,49 @@ package org.operaton.bpm.engine.rest;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.operaton.bpm.engine.rest.util.JsonPathUtil.from;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.anyString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.operaton.bpm.engine.rest.util.JsonPathUtil.from;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.ws.rs.core.Response.Status;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 import org.operaton.bpm.engine.batch.Batch;
 import org.operaton.bpm.engine.batch.BatchQuery;
 import org.operaton.bpm.engine.rest.dto.batch.BatchDto;
 import org.operaton.bpm.engine.rest.exception.InvalidRequestException;
 import org.operaton.bpm.engine.rest.helper.MockProvider;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.mockito.InOrder;
-import org.mockito.Mockito;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 public class BatchRestServiceQueryTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String BATCH_RESOURCE_URL = TEST_RESOURCE_ROOT_PATH + "/batch";
   protected static final String BATCH_QUERY_COUNT_URL = BATCH_RESOURCE_URL + "/count";
 
   protected BatchQuery queryMock;
 
-  @Before
-  public void setUpBatchQueryMock() {
+  @BeforeEach
+  void setUpBatchQueryMock() {
     List<Batch> mockedBatches = MockProvider.createMockBatches();
     queryMock = mock(BatchQuery.class);
 
@@ -72,7 +71,7 @@ public class BatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testNoParametersQuery() {
+  void testNoParametersQuery() {
     Response response = given()
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
@@ -86,7 +85,7 @@ public class BatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUnknownQueryParameter() {
+  void testUnknownQueryParameter() {
     Response response = given()
       .queryParam("unknown", "unknown")
     .then().expect()
@@ -101,7 +100,7 @@ public class BatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testSortByParameterOnly() {
+  void testSortByParameterOnly() {
     given()
       .queryParam("sortBy", "batchId")
     .then().expect()
@@ -116,7 +115,7 @@ public class BatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testSortOrderParameterOnly() {
+  void testSortOrderParameterOnly() {
     given()
       .queryParam("sortOrder", "asc")
     .then().expect()
@@ -131,7 +130,7 @@ public class BatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testBatchQueryByBatchId() {
+  void testBatchQueryByBatchId() {
     Response response = given()
       .queryParam("batchId", MockProvider.EXAMPLE_BATCH_ID)
     .then().expect()
@@ -148,7 +147,7 @@ public class BatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testQueryActiveBatches() {
+  void testQueryActiveBatches() {
     Response response = given()
       .queryParam("suspended", false)
     .then().expect()
@@ -165,7 +164,7 @@ public class BatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testFullBatchQuery() {
+  void testFullBatchQuery() {
     Response response = given()
         .queryParams(getCompleteQueryParameters())
       .then().expect()
@@ -181,7 +180,7 @@ public class BatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testQueryCount() {
+  void testQueryCount() {
     given()
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
@@ -194,7 +193,7 @@ public class BatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testFullQueryCount() {
+  void testFullQueryCount() {
     given()
       .params(getCompleteQueryParameters())
     .then().expect()
@@ -209,7 +208,7 @@ public class BatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testSortingParameters() {
+  void testSortingParameters() {
     InOrder inOrder = Mockito.inOrder(queryMock);
     executeAndVerifySorting("batchId", "desc", Status.OK);
     inOrder.verify(queryMock).orderById();
@@ -263,7 +262,7 @@ public class BatchRestServiceQueryTest extends AbstractRestServiceTest {
 
   protected void verifyBatchListJson(String batchListJson) {
     List<Object> batches = from(batchListJson).get();
-    assertEquals("There should be one batch returned.", 1, batches.size());
+    assertEquals(1, batches.size(), "There should be one batch returned.");
 
     BatchDto batch = from(batchListJson).getObject("[0]", BatchDto.class);
     String returnedStartTime = from(batchListJson).getString("[0].startTime");

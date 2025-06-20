@@ -25,11 +25,11 @@ import org.operaton.bpm.engine.impl.SignalEventReceivedBuilderImpl;
 import org.operaton.bpm.engine.rest.exception.InvalidRequestException;
 import org.operaton.bpm.engine.rest.exception.RestException;
 import org.operaton.bpm.engine.rest.util.VariablesBuilder;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 import org.operaton.bpm.engine.runtime.SignalEventReceivedBuilder;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import jakarta.ws.rs.core.Response.Status;
@@ -51,16 +51,16 @@ import static org.mockito.Mockito.when;
  */
 public class SignalRestServiceTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String SIGNAL_URL = TEST_RESOURCE_ROOT_PATH +  SignalRestService.PATH;
 
   private RuntimeService runtimeServiceMock;
   private SignalEventReceivedBuilder signalBuilderMock;
 
-  @Before
-  public void setupMocks() {
+  @BeforeEach
+  void setupMocks() {
     runtimeServiceMock = mock(RuntimeService.class);
     when(processEngine.getRuntimeService()).thenReturn(runtimeServiceMock);
 
@@ -73,7 +73,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldBroadcast() {
+  void shouldBroadcast() {
     Map<String, String> requestBody = new HashMap<>();
     requestBody.put("name", "aSignalName");
 
@@ -92,7 +92,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldBroadcastWithVariables() {
+  void shouldBroadcastWithVariables() {
     Map<String, Object> requestBody = new HashMap<>();
     requestBody.put("name", "aSignalName");
     requestBody.put("variables",
@@ -121,7 +121,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldBroadcastWithTenant() {
+  void shouldBroadcastWithTenant() {
     Map<String, Object> requestBody = new HashMap<>();
     requestBody.put("name", "aSignalName");
     requestBody.put("tenantId", "aTenantId");
@@ -142,7 +142,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldBroadcastWithVariablesAndTenant() {
+  void shouldBroadcastWithVariablesAndTenant() {
     Map<String, Object> requestBody = new HashMap<>();
     requestBody.put("name", "aSignalName");
     requestBody.put("variables",
@@ -173,7 +173,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldBroadcastWithoutTenant() {
+  void shouldBroadcastWithoutTenant() {
     Map<String, Object> requestBody = new HashMap<>();
     requestBody.put("name", "aSignalName");
     requestBody.put("withoutTenantId", true);
@@ -194,7 +194,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldBroadcastWithoutTenantAndWithVariables() {
+  void shouldBroadcastWithoutTenantAndWithVariables() {
     Map<String, Object> requestBody = new HashMap<>();
     requestBody.put("name", "aSignalName");
     requestBody.put("variables",
@@ -224,7 +224,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldDeliverToSingleExecution() {
+  void shouldDeliverToSingleExecution() {
     Map<String, String> requestBody = new HashMap<>();
     requestBody.put("name", "aSignalName");
     requestBody.put("executionId", "anExecutionId");
@@ -245,7 +245,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldDeliverToSingleExecutionWithVariables() {
+  void shouldDeliverToSingleExecutionWithVariables() {
     Map<String, Object> requestBody = new HashMap<>();
     requestBody.put("name", "aSignalName");
     requestBody.put("executionId", "anExecutionId");
@@ -275,7 +275,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldDeliverToSingleExecutionWithTenant() {
+  void shouldDeliverToSingleExecutionWithTenant() {
     Map<String, Object> requestBody = new HashMap<>();
     requestBody.put("name", "aSignalName");
     requestBody.put("tenantId", "aTenantId");
@@ -298,7 +298,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldDeliverToSingleExecutionWithVariablesAndTenant() {
+  void shouldDeliverToSingleExecutionWithVariablesAndTenant() {
     Map<String, Object> requestBody = new HashMap<>();
     requestBody.put("name", "aSignalName");
     requestBody.put("executionId", "anExecutionId");
@@ -330,7 +330,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldDeliverToSingleExecutionWithoutTenant() {
+  void shouldDeliverToSingleExecutionWithoutTenant() {
     Map<String, Object> requestBody = new HashMap<>();
     requestBody.put("name", "aSignalName");
     requestBody.put("executionId", "anExecutionId");
@@ -353,7 +353,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldDeliverToSingleExecutionWithoutTenantAndWithVariables() {
+  void shouldDeliverToSingleExecutionWithoutTenantAndWithVariables() {
     Map<String, Object> requestBody = new HashMap<>();
     requestBody.put("name", "aSignalName");
     requestBody.put("executionId", "anExecutionId");
@@ -385,7 +385,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldThrowExceptionByMissingName() {
+  void shouldThrowExceptionByMissingName() {
     Map<String, Object> requestBody = new HashMap<>();
 
     given()
@@ -401,7 +401,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldThrowBadUserRequestException() {
+  void shouldThrowBadUserRequestException() {
     String message = "expected exception";
     doThrow(new BadUserRequestException(message)).when(signalBuilderMock).send();
 
@@ -421,7 +421,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldThrowAuthorizationException() {
+  void shouldThrowAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(signalBuilderMock).send();
 
@@ -441,7 +441,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldThrowProcessEngineException() {
+  void shouldThrowProcessEngineException() {
     String message = "expected exception";
     doThrow(new ProcessEngineException(message)).when(signalBuilderMock).send();
 
@@ -461,7 +461,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldReturnInternalServerErrorResponseForNotFoundException() {
+  void shouldReturnInternalServerErrorResponseForNotFoundException() {
     String message = "expected exception";
     doThrow(new NotFoundException(message)).when(signalBuilderMock).send();
 
@@ -482,7 +482,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldReturnInternalServerErrorResponseJsonWithTypeAndMessage() {
+  void shouldReturnInternalServerErrorResponseJsonWithTypeAndMessage() {
     String message = "expected exception";
     doThrow(new IllegalArgumentException(message)).when(signalBuilderMock).send();
 
@@ -502,7 +502,7 @@ public class SignalRestServiceTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void shouldReturnError() {
+  void shouldReturnError() {
     doThrow(new ProcessEngineException("foo", 123))
         .when(signalBuilderMock).send();
 

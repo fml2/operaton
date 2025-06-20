@@ -19,6 +19,25 @@ package org.operaton.bpm.engine.rest;
 import static io.restassured.RestAssured.given;
 import static io.restassured.path.json.JsonPath.from;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.operaton.bpm.engine.rest.helper.MockProvider.EXAMPLE_CASE_DEFINITION_ID;
 import static org.operaton.bpm.engine.rest.helper.MockProvider.EXAMPLE_CASE_EXECUTION_ID;
 import static org.operaton.bpm.engine.rest.helper.MockProvider.EXAMPLE_CASE_INSTANCE_ID;
@@ -42,25 +61,6 @@ import static org.operaton.bpm.engine.rest.helper.MockProvider.EXAMPLE_USER_ID;
 import static org.operaton.bpm.engine.rest.helper.MockProvider.NON_EXISTING_ID;
 import static org.operaton.bpm.engine.rest.helper.MockProvider.createMockHistoricTaskInstance;
 import static org.operaton.bpm.engine.rest.util.DateTimeUtils.withTimezone;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -74,10 +74,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.ws.rs.HttpMethod;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response.Status;
-
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.operaton.bpm.ProcessApplicationService;
 import org.operaton.bpm.application.ProcessApplicationInfo;
 import org.operaton.bpm.container.RuntimeContainerDelegate;
@@ -121,7 +123,7 @@ import org.operaton.bpm.engine.rest.helper.variable.EqualsPrimitiveValue;
 import org.operaton.bpm.engine.rest.helper.variable.EqualsUntypedValue;
 import org.operaton.bpm.engine.rest.util.EncodingUtil;
 import org.operaton.bpm.engine.rest.util.VariablesBuilder;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 import org.operaton.bpm.engine.task.Attachment;
 import org.operaton.bpm.engine.task.Comment;
 import org.operaton.bpm.engine.task.DelegationState;
@@ -132,22 +134,19 @@ import org.operaton.bpm.engine.task.TaskQuery;
 import org.operaton.bpm.engine.variable.VariableMap;
 import org.operaton.bpm.engine.variable.type.ValueType;
 import org.operaton.bpm.engine.variable.value.FileValue;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 import io.restassured.http.ContentType;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response.Status;
 
 public class TaskRestServiceInteractionTest extends
     AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String TASK_SERVICE_URL = TEST_RESOURCE_ROOT_PATH + "/task";
   protected static final String SINGLE_TASK_URL = TASK_SERVICE_URL + "/{id}";
@@ -201,8 +200,8 @@ public class TaskRestServiceInteractionTest extends
   private Attachment mockTaskAttachment;
   private List<Attachment> mockTaskAttachments;
 
-  @Before
-  public void setUpRuntimeData() {
+  @BeforeEach
+  void setUpRuntimeData() {
     taskServiceMock = mock(TaskService.class);
     when(processEngine.getTaskService()).thenReturn(taskServiceMock);
 
@@ -286,7 +285,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTask() {
+  void testGetSingleTask() {
     given().pathParam("id", EXAMPLE_TASK_ID)
       .header("accept", MediaType.APPLICATION_JSON)
       .then().expect().statusCode(Status.OK.getStatusCode())
@@ -313,8 +312,9 @@ public class TaskRestServiceInteractionTest extends
       .body("taskState", equalTo(MockProvider.EXAMPLE_HISTORIC_TASK_STATE))
       .when().get(SINGLE_TASK_URL);
   }
+
   @Test
-  public void testGetSingleTaskWithQueryParam() {
+  void testGetSingleTaskWithQueryParam() {
     given().pathParam("id", EXAMPLE_TASK_ID)
       .queryParam("withCommentAttachmentInfo", true)
       .header("accept", MediaType.APPLICATION_JSON)
@@ -346,7 +346,7 @@ public class TaskRestServiceInteractionTest extends
 
   @Test
   @SuppressWarnings("unchecked")
-  public void testGetSingleTaskHal() {
+  void testGetSingleTaskHal() {
 
     // setup user query mock
     List<User> mockUsers = Arrays.asList(
@@ -431,7 +431,7 @@ public class TaskRestServiceInteractionTest extends
 
     // validate embedded users:
     List<Map<String,Object>> embeddedUsers = from(content).getList("_embedded.user");
-    Assert.assertEquals("There should be two users returned.", 2, embeddedUsers.size());
+    Assertions.assertEquals(2, embeddedUsers.size(), "There should be two users returned.");
 
     Map<String, Object> embeddedUser = embeddedUsers.get(0);
     assertThat(embeddedUser).as("The returned user should not be null.").isNotNull();
@@ -457,7 +457,7 @@ public class TaskRestServiceInteractionTest extends
 
     // validate embedded groups:
     List<Map<String, Object>> embeddedGroups = from(content).getList("_embedded.group");
-    Assert.assertEquals("There should be two groups returned.", 2, embeddedGroups.size());
+    Assertions.assertEquals(2, embeddedGroups.size(), "There should be two groups returned.");
 
     Map<String, Object> embeddedGroup = embeddedGroups.get(0);
     assertThat(embeddedGroup).as("The returned group should not be null.").isNotNull();
@@ -481,24 +481,24 @@ public class TaskRestServiceInteractionTest extends
 
     // validate embedded processDefinitions:
     List<Map<String,Object>> embeddedDefinitions = from(content).getList("_embedded.processDefinition");
-    Assert.assertEquals("There should be one processDefinition returned.", 1, embeddedDefinitions.size());
+    Assertions.assertEquals(1, embeddedDefinitions.size(), "There should be one processDefinition returned.");
     Map<String, Object> embeddedProcessDefinition = embeddedDefinitions.get(0);
     assertThat(embeddedProcessDefinition).as("The returned processDefinition should not be null.").isNotNull();
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_ID, embeddedProcessDefinition.get("id"));
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY, embeddedProcessDefinition.get("key"));
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_CATEGORY, embeddedProcessDefinition.get("category"));
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_NAME, embeddedProcessDefinition.get("name"));
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_DESCRIPTION, embeddedProcessDefinition.get("description"));
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_VERSION, embeddedProcessDefinition.get("version"));
-    Assert.assertEquals(MockProvider.EXAMPLE_VERSION_TAG, embeddedProcessDefinition.get("versionTag"));
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_RESOURCE_NAME, embeddedProcessDefinition.get("resource"));
-    Assert.assertEquals(MockProvider.EXAMPLE_DEPLOYMENT_ID, embeddedProcessDefinition.get("deploymentId"));
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_DIAGRAM_RESOURCE_NAME, embeddedProcessDefinition.get("diagram"));
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_IS_SUSPENDED, embeddedProcessDefinition.get("suspended"));
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_APPLICATION_CONTEXT_PATH, embeddedProcessDefinition.get("contextPath"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_ID, embeddedProcessDefinition.get("id"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_KEY, embeddedProcessDefinition.get("key"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_CATEGORY, embeddedProcessDefinition.get("category"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_NAME, embeddedProcessDefinition.get("name"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_DESCRIPTION, embeddedProcessDefinition.get("description"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_VERSION, embeddedProcessDefinition.get("version"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_VERSION_TAG, embeddedProcessDefinition.get("versionTag"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_RESOURCE_NAME, embeddedProcessDefinition.get("resource"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_DEPLOYMENT_ID, embeddedProcessDefinition.get("deploymentId"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_DIAGRAM_RESOURCE_NAME, embeddedProcessDefinition.get("diagram"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_DEFINITION_IS_SUSPENDED, embeddedProcessDefinition.get("suspended"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_APPLICATION_CONTEXT_PATH, embeddedProcessDefinition.get("contextPath"));
 
     links = (Map<String, Object>) embeddedProcessDefinition.get("_links");
-    Assert.assertEquals(3, links.size());
+    Assertions.assertEquals(3, links.size());
     assertHalLink(links, "self", "/process-definition/" +  MockProvider.EXAMPLE_PROCESS_DEFINITION_ID);
     assertHalLink(links, "deployment", "/deployment/" +  MockProvider.EXAMPLE_DEPLOYMENT_ID);
     assertHalLink(links, "resource", "/deployment/" +  MockProvider.EXAMPLE_DEPLOYMENT_ID + "/resources/"
@@ -507,20 +507,20 @@ public class TaskRestServiceInteractionTest extends
 
     // validate embedded caseDefinitions:
     List<Map<String,Object>> embeddedCaseDefinitions = from(content).getList("_embedded.caseDefinition");
-    Assert.assertEquals("There should be one caseDefinition returned.", 1, embeddedCaseDefinitions.size());
+    Assertions.assertEquals(1, embeddedCaseDefinitions.size(), "There should be one caseDefinition returned.");
     Map<String, Object> embeddedCaseDefinition = embeddedCaseDefinitions.get(0);
     assertThat(embeddedCaseDefinition).as("The returned caseDefinition should not be null.").isNotNull();
-    Assert.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_ID, embeddedCaseDefinition.get("id"));
-    Assert.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_KEY, embeddedCaseDefinition.get("key"));
-    Assert.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_CATEGORY, embeddedCaseDefinition.get("category"));
-    Assert.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_NAME, embeddedCaseDefinition.get("name"));
-    Assert.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_VERSION, embeddedCaseDefinition.get("version"));
-    Assert.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_RESOURCE_NAME, embeddedCaseDefinition.get("resource"));
-    Assert.assertEquals(MockProvider.EXAMPLE_DEPLOYMENT_ID, embeddedCaseDefinition.get("deploymentId"));
-    Assert.assertEquals(MockProvider.EXAMPLE_PROCESS_APPLICATION_CONTEXT_PATH, embeddedCaseDefinition.get("contextPath"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_ID, embeddedCaseDefinition.get("id"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_KEY, embeddedCaseDefinition.get("key"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_CATEGORY, embeddedCaseDefinition.get("category"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_NAME, embeddedCaseDefinition.get("name"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_VERSION, embeddedCaseDefinition.get("version"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_RESOURCE_NAME, embeddedCaseDefinition.get("resource"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_DEPLOYMENT_ID, embeddedCaseDefinition.get("deploymentId"));
+    Assertions.assertEquals(MockProvider.EXAMPLE_PROCESS_APPLICATION_CONTEXT_PATH, embeddedCaseDefinition.get("contextPath"));
 
     links = (Map<String, Object>) embeddedCaseDefinition.get("_links");
-    Assert.assertEquals(3, links.size());
+    Assertions.assertEquals(3, links.size());
     assertHalLink(links, "self", "/case-definition/" +  MockProvider.EXAMPLE_CASE_DEFINITION_ID);
     assertHalLink(links, "deployment", "/deployment/" +  MockProvider.EXAMPLE_DEPLOYMENT_ID);
     assertHalLink(links, "resource", "/deployment/" +  MockProvider.EXAMPLE_DEPLOYMENT_ID + "/resources/"
@@ -528,7 +528,7 @@ public class TaskRestServiceInteractionTest extends
 
     // validate embedded identity links
     List<Map<String, Object>> embeddedIdentityLinks = from(content).getList("_embedded.identityLink");
-    assertEquals("There should be three identityLink returned", 4, embeddedIdentityLinks.size());
+    assertEquals(4, embeddedIdentityLinks.size(), "There should be three identityLink returned");
     assertEmbeddedIdentityLink(mockAssigneeIdentityLink, embeddedIdentityLinks.get(0));
     assertEmbeddedIdentityLink(mockOwnerIdentityLink, embeddedIdentityLinks.get(1));
     assertEmbeddedIdentityLink(mockCandidateGroupIdentityLink, embeddedIdentityLinks.get(2));
@@ -542,7 +542,7 @@ public class TaskRestServiceInteractionTest extends
     assertThat(linkObject).isNotNull();
 
     String actualLink = (String) linkObject.get("href");
-    Assert.assertEquals(expectedLink, actualLink);
+    Assertions.assertEquals(expectedLink, actualLink);
   }
 
   @SuppressWarnings("unchecked")
@@ -567,7 +567,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetForm() {
+  void testGetForm() {
     given().pathParam("id", EXAMPLE_TASK_ID)
       .header("accept", MediaType.APPLICATION_JSON)
       .then().expect().statusCode(Status.OK.getStatusCode())
@@ -578,7 +578,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskshouldContainOperatonFormRef() {
+  void testGetTaskshouldContainOperatonFormRef() {
     given().pathParam("id", MockProvider.EXAMPLE_TASK_ID)
       .header("accept", MediaType.APPLICATION_JSON)
       .then().expect()
@@ -594,7 +594,7 @@ public class TaskRestServiceInteractionTest extends
    * Assuming the task belongs to a deployment that does not belong to any process application
    */
   @Test
-  public void testGetFormForNonRegisteredDeployment() {
+  void testGetFormForNonRegisteredDeployment() {
     when(managementServiceMock.getProcessApplicationForDeployment(MockProvider.EXAMPLE_DEPLOYMENT_ID)).thenReturn(null);
 
     given().pathParam("id", EXAMPLE_TASK_ID)
@@ -606,7 +606,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetForm_shouldReturnFormRef() {
+  void testGetForm_shouldReturnFormRef() {
     TaskFormData mockTaskFormData = MockProvider.createMockTaskFormDataUsingFormRef();
     when(formServiceMock.getTaskFormData(EXAMPLE_TASK_ID)).thenReturn(mockTaskFormData);
 
@@ -626,7 +626,7 @@ public class TaskRestServiceInteractionTest extends
    * Assuming that the task belongs to no process definition
    */
   @Test
-  public void getFormForIndependentTask() {
+  void getFormForIndependentTask() {
     when(mockTask.getProcessDefinitionId()).thenReturn(null);
 
     given().pathParam("id", EXAMPLE_TASK_ID)
@@ -640,7 +640,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetForm_shouldReturnKeyContainingTaskId() {
+  void testGetForm_shouldReturnKeyContainingTaskId() {
     TaskFormData mockTaskFormData = MockProvider.createMockTaskFormDataUsingFormFieldsWithoutFormKey();
     when(formServiceMock.getTaskFormData(EXAMPLE_TASK_ID)).thenReturn(mockTaskFormData);
 
@@ -653,7 +653,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetForm__FormDataEqualsNull() {
+  void testGetForm__FormDataEqualsNull() {
     when(formServiceMock.getTaskFormData(EXAMPLE_TASK_ID)).thenReturn(null);
 
     given().pathParam("id", EXAMPLE_TASK_ID)
@@ -664,7 +664,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetFormThrowsAuthorizationException() {
+  void testGetFormThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(formServiceMock).getTaskFormData(anyString());
 
@@ -681,7 +681,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetRenderedForm() {
+  void testGetRenderedForm() {
     String expectedResult = "<formField>anyContent</formField>";
 
     when(formServiceMock.getRenderedTaskForm(EXAMPLE_TASK_ID)).thenReturn(expectedResult);
@@ -700,7 +700,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetRenderedFormForDifferentPlatformEncoding() {
+  void testGetRenderedFormForDifferentPlatformEncoding() {
     String expectedResult = "<formField>unicode symbol: \u2200</formField>";
     when(formServiceMock.getRenderedTaskForm(MockProvider.EXAMPLE_TASK_ID)).thenReturn(expectedResult);
 
@@ -718,7 +718,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetRenderedFormReturnsNotFound() {
+  void testGetRenderedFormReturnsNotFound() {
     when(formServiceMock.getRenderedTaskForm(anyString(), anyString())).thenReturn(null);
 
     given()
@@ -733,7 +733,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetRenderedFormThrowsAuthorizationException() {
+  void testGetRenderedFormThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(formServiceMock).getRenderedTaskForm(anyString());
 
@@ -748,7 +748,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testSubmitForm() {
+  void testSubmitForm() {
     given().pathParam("id", EXAMPLE_TASK_ID)
       .header("accept", MediaType.APPLICATION_JSON)
       .contentType(POST_JSON_CONTENT_TYPE).body(EMPTY_JSON_OBJECT)
@@ -760,7 +760,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testSubmitFormWithVariablesInReturn() {
+  void testSubmitFormWithVariablesInReturn() {
     VariableMap variables = MockProvider.createMockSerializedVariables();
     when(formServiceMock.submitTaskFormWithVariablesInReturn(EXAMPLE_TASK_ID, null, false)).thenReturn(variables);
 
@@ -798,7 +798,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testSubmitFormWithParameters() {
+  void testSubmitFormWithParameters() {
     Map<String, Object> variables = VariablesBuilder.create()
         .variable("aVariable", "aStringValue")
         .variable("anotherVariable", 42)
@@ -823,7 +823,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testSubmitTaskFormWithBase64EncodedBytes() {
+  void testSubmitTaskFormWithBase64EncodedBytes() {
     Map<String, Object> variables = VariablesBuilder.create()
         .variable("aVariable", Base64.getEncoder().encodeToString("someBytes".getBytes()), "Bytes")
         .getVariables();
@@ -842,9 +842,9 @@ public class TaskRestServiceInteractionTest extends
       .matcher("aVariable", EqualsPrimitiveValue.bytesValue("someBytes".getBytes()))));
   }
 
-  @SuppressWarnings({ "unchecked" })
+  @SuppressWarnings({"unchecked"})
   @Test
-  public void testSubmitTaskFormWithFileValue() {
+  void testSubmitTaskFormWithFileValue() {
     String variableKey = "aVariable";
     String filename = "test.txt";
     Map<String, Object> variables = VariablesBuilder.create().variable(variableKey,
@@ -872,7 +872,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testSubmitFormWithUnparseableIntegerVariable() {
+  void testSubmitFormWithUnparseableIntegerVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "Integer";
@@ -894,7 +894,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testSubmitFormWithUnparseableShortVariable() {
+  void testSubmitFormWithUnparseableShortVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "Short";
@@ -916,7 +916,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testSubmitFormWithUnparseableLongVariable() {
+  void testSubmitFormWithUnparseableLongVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "Long";
@@ -938,7 +938,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testSubmitFormWithUnparseableDoubleVariable() {
+  void testSubmitFormWithUnparseableDoubleVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "Double";
@@ -960,7 +960,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testSubmitFormWithUnparseableDateVariable() {
+  void testSubmitFormWithUnparseableDateVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "Date";
@@ -982,7 +982,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void shouldReturnErrorOnSubmitTaskForm() {
+  void shouldReturnErrorOnSubmitTaskForm() {
     doThrow(new ProcessEngineException("foo", 123))
         .when(formServiceMock).submitTaskForm(anyString(), Mockito.any());
 
@@ -998,7 +998,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testSubmitFormWithNotSupportedVariableType() {
+  void testSubmitFormWithNotSupportedVariableType() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "X";
@@ -1019,7 +1019,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUnsuccessfulSubmitForm() {
+  void testUnsuccessfulSubmitForm() {
     doThrow(new ProcessEngineException("expected exception")).when(formServiceMock).submitTaskForm(any(String.class), Mockito.any());
 
     given().pathParam("id", EXAMPLE_TASK_ID)
@@ -1033,7 +1033,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testSubmitFormThrowsAuthorizationException() {
+  void testSubmitFormThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(formServiceMock).submitTaskForm(anyString(), Mockito.any());
 
@@ -1052,7 +1052,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testSubmitTaskFormThrowsFormFieldValidationException() {
+  void testSubmitTaskFormThrowsFormFieldValidationException() {
     String message = "expected exception";
     doThrow(new FormFieldValidationException("form-exception", message)).when(formServiceMock).submitTaskForm(anyString(), Mockito.any());
 
@@ -1072,7 +1072,7 @@ public class TaskRestServiceInteractionTest extends
 
 
   @Test
-  public void testGetTaskFormVariables() {
+  void testGetTaskFormVariables() {
 
     given().pathParam("id", EXAMPLE_TASK_ID)
       .header("accept", MediaType.APPLICATION_JSON)
@@ -1089,7 +1089,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskFormVariablesVarNames() {
+  void testGetTaskFormVariablesVarNames() {
     given()
       .pathParam("id", EXAMPLE_TASK_ID)
       .queryParam("variableNames", "a,b,c")
@@ -1102,7 +1102,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskFormVariablesAndDoNotDeserializeVariables() {
+  void testGetTaskFormVariablesAndDoNotDeserializeVariables() {
 
     given()
       .pathParam("id", EXAMPLE_TASK_ID)
@@ -1121,7 +1121,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskFormVariablesVarNamesAndDoNotDeserializeVariables() {
+  void testGetTaskFormVariablesVarNamesAndDoNotDeserializeVariables() {
     given()
       .pathParam("id", EXAMPLE_TASK_ID)
       .queryParam("deserializeValues", false)
@@ -1135,7 +1135,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskFormVariablesThrowsAuthorizationException() {
+  void testGetTaskFormVariablesThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(formServiceMock).getTaskFormVariables(anyString(), Mockito.any(), anyBoolean());
 
@@ -1150,7 +1150,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testClaimTask() {
+  void testClaimTask() {
     Map<String, Object> json = new HashMap<>();
     json.put("userId", EXAMPLE_USER_ID);
 
@@ -1165,7 +1165,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testMissingUserId() {
+  void testMissingUserId() {
     Map<String, Object> json = new HashMap<>();
     json.put("userId", null);
 
@@ -1180,7 +1180,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUnsuccessfulClaimTask() {
+  void testUnsuccessfulClaimTask() {
     doThrow(new ProcessEngineException("expected exception")).when(taskServiceMock).claim(any(), any());
 
     given().pathParam("id", EXAMPLE_TASK_ID)
@@ -1194,7 +1194,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testClaimTaskThrowsAuthorizationException() {
+  void testClaimTaskThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(taskServiceMock).claim(any(), any());
 
@@ -1213,7 +1213,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUnclaimTask() {
+  void testUnclaimTask() {
     given().pathParam("id", EXAMPLE_TASK_ID)
       .header("accept", MediaType.APPLICATION_JSON)
       .then().expect()
@@ -1224,7 +1224,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUnsuccessfulUnclaimTask() {
+  void testUnsuccessfulUnclaimTask() {
     doThrow(new ProcessEngineException("expected exception")).when(taskServiceMock).setAssignee(any(), any());
 
     given().pathParam("id", EXAMPLE_TASK_ID)
@@ -1237,7 +1237,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUnclaimTaskThrowsAuthorizationException() {
+  void testUnclaimTaskThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(taskServiceMock).setAssignee(any(), any());
 
@@ -1254,7 +1254,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testSetAssignee() {
+  void testSetAssignee() {
     Map<String, Object> json = new HashMap<>();
     json.put("userId", EXAMPLE_USER_ID);
 
@@ -1269,7 +1269,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testMissingUserIdSetAssignee() {
+  void testMissingUserIdSetAssignee() {
     Map<String, Object> json = new HashMap<>();
     json.put("userId", null);
 
@@ -1284,7 +1284,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUnsuccessfulSetAssignee() {
+  void testUnsuccessfulSetAssignee() {
     doThrow(new ProcessEngineException("expected exception")).when(taskServiceMock).setAssignee(any(), any());
 
     given().pathParam("id", EXAMPLE_TASK_ID)
@@ -1298,7 +1298,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testSetAssigneeThrowsAuthorizationException() {
+  void testSetAssigneeThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(taskServiceMock).setAssignee(any(), any());
 
@@ -1323,7 +1323,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetIdentityLinks() {
+  void testGetIdentityLinks() {
     Map<String, Object> expectedAssigneeIdentityLink = toExpectedJsonMap(mockAssigneeIdentityLink);
     Map<String, Object> expectedOwnerIdentityLink = toExpectedJsonMap(mockOwnerIdentityLink);
     Map<String, Object> expectedGroupIdentityLink = toExpectedJsonMap(mockCandidateGroupIdentityLink);
@@ -1344,7 +1344,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetIdentityLinksByType() {
+  void testGetIdentityLinksByType() {
     Map<String, Object> expectedGroupIdentityLink = toExpectedJsonMap(mockCandidateGroupIdentityLink);
     Map<String, Object> expectedGroupIdentityLink2 = toExpectedJsonMap(mockCandidateGroup2IdentityLink);
 
@@ -1361,7 +1361,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetIdentityLinksThrowsAuthorizationException() {
+  void testGetIdentityLinksThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(taskServiceMock).getIdentityLinksForTask(anyString());
 
@@ -1376,7 +1376,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testAddUserIdentityLink() {
+  void testAddUserIdentityLink() {
     String userId = "someUserId";
     String taskId = EXAMPLE_TASK_ID;
     String type = "someType";
@@ -1397,7 +1397,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testAddGroupIdentityLink() {
+  void testAddGroupIdentityLink() {
     String groupId = "someGroupId";
     String taskId = EXAMPLE_TASK_ID;
     String type = "someType";
@@ -1418,7 +1418,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testInvalidAddIdentityLink() {
+  void testInvalidAddIdentityLink() {
     String groupId = "someGroupId";
     String userId = "someUserId";
     String taskId = EXAMPLE_TASK_ID;
@@ -1445,7 +1445,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUnderspecifiedAddIdentityLink() {
+  void testUnderspecifiedAddIdentityLink() {
     String taskId = EXAMPLE_TASK_ID;
     String type = "someType";
 
@@ -1468,7 +1468,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testAddGroupIdentityLinkThrowsAuthorizationException() {
+  void testAddGroupIdentityLinkThrowsAuthorizationException() {
     String groupId = "someGroupId";
     String taskId = EXAMPLE_TASK_ID;
     String type = "someType";
@@ -1494,7 +1494,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testAddUserIdentityLinkThrowsAuthorizationException() {
+  void testAddUserIdentityLinkThrowsAuthorizationException() {
     String userId = "someUserId";
     String taskId = EXAMPLE_TASK_ID;
     String type = "someType";
@@ -1520,7 +1520,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteUserIdentityLink() {
+  void testDeleteUserIdentityLink() {
     String deleteIdentityLinkUrl = TASK_IDENTITY_LINKS_URL + "/delete";
 
     String taskId = EXAMPLE_TASK_ID;
@@ -1543,7 +1543,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteGroupIdentityLink() {
+  void testDeleteGroupIdentityLink() {
     String deleteIdentityLinkUrl = TASK_IDENTITY_LINKS_URL + "/delete";
 
     String taskId = EXAMPLE_TASK_ID;
@@ -1566,7 +1566,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteGroupIdentityLinkThrowsAuthorizationException() {
+  void testDeleteGroupIdentityLinkThrowsAuthorizationException() {
     String deleteIdentityLinkUrl = TASK_IDENTITY_LINKS_URL + "/delete";
 
     String taskId = EXAMPLE_TASK_ID;
@@ -1593,7 +1593,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteUserIdentityLinkThrowsAuthorizationException() {
+  void testDeleteUserIdentityLinkThrowsAuthorizationException() {
     String deleteIdentityLinkUrl = TASK_IDENTITY_LINKS_URL + "/delete";
 
     String taskId = EXAMPLE_TASK_ID;
@@ -1620,7 +1620,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCompleteTask() {
+  void testCompleteTask() {
     given().pathParam("id", EXAMPLE_TASK_ID)
       .header("accept", MediaType.APPLICATION_JSON)
       .contentType(POST_JSON_CONTENT_TYPE).body(EMPTY_JSON_OBJECT)
@@ -1632,7 +1632,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCompleteWithParameters() {
+  void testCompleteWithParameters() {
     Map<String, Object> variables = VariablesBuilder.create()
         .variable("aVariable", "aStringValue")
         .variable("anotherVariable", 42)
@@ -1657,7 +1657,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCompleteTaskWithVariablesInReturn() {
+  void testCompleteTaskWithVariablesInReturn() {
     VariableMap variables = MockProvider.createMockSerializedVariables();
     when(taskServiceMock.completeWithVariablesInReturn(EXAMPLE_TASK_ID, null, false)).thenReturn(variables);
 
@@ -1696,7 +1696,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCompleteWithUnparseableIntegerVariable() {
+  void testCompleteWithUnparseableIntegerVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "Integer";
@@ -1718,7 +1718,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCompleteWithUnparseableShortVariable() {
+  void testCompleteWithUnparseableShortVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "Short";
@@ -1740,7 +1740,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCompleteWithUnparseableLongVariable() {
+  void testCompleteWithUnparseableLongVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "Long";
@@ -1762,7 +1762,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCompleteWithUnparseableDoubleVariable() {
+  void testCompleteWithUnparseableDoubleVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "Double";
@@ -1784,7 +1784,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCompleteWithUnparseableDateVariable() {
+  void testCompleteWithUnparseableDateVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "Date";
@@ -1806,7 +1806,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCompleteWithNotSupportedVariableType() {
+  void testCompleteWithNotSupportedVariableType() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "X";
@@ -1827,7 +1827,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUnsuccessfulCompleteTask() {
+  void testUnsuccessfulCompleteTask() {
     doThrow(new ProcessEngineException("expected exception")).when(taskServiceMock).complete(any(String.class), Mockito.any());
 
     given().pathParam("id", EXAMPLE_TASK_ID)
@@ -1841,7 +1841,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void shouldReturnErrorOnCompletingTask() {
+  void shouldReturnErrorOnCompletingTask() {
     doThrow(new ProcessEngineException("foo", 123))
         .when(taskServiceMock).complete(any(String.class), Mockito.any());
 
@@ -1857,7 +1857,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCompleteTaskThrowsAuthorizationException() {
+  void testCompleteTaskThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(taskServiceMock).complete(anyString(), Mockito.any());
 
@@ -1875,7 +1875,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testResolveTask() {
+  void testResolveTask() {
     Map<String, Object> variables = VariablesBuilder.create()
         .variable("aVariable", "aStringValue")
         .variable("anotherVariable", 42)
@@ -1900,7 +1900,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testResolveTaskWithUnparseableIntegerVariable() {
+  void testResolveTaskWithUnparseableIntegerVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "Integer";
@@ -1922,7 +1922,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testResolveTaskWithUnparseableShortVariable() {
+  void testResolveTaskWithUnparseableShortVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "Short";
@@ -1944,7 +1944,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testResolveTaskWithUnparseableLongVariable() {
+  void testResolveTaskWithUnparseableLongVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "Long";
@@ -1966,7 +1966,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testResolveTaskWithUnparseableDoubleVariable() {
+  void testResolveTaskWithUnparseableDoubleVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "Double";
@@ -1988,7 +1988,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testResolveTaskWithUnparseableDateVariable() {
+  void testResolveTaskWithUnparseableDateVariable() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "Date";
@@ -2010,7 +2010,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testResolveTaskWithNotSupportedVariableType() {
+  void testResolveTaskWithNotSupportedVariableType() {
     String variableKey = "aVariableKey";
     String variableValue = "1abc";
     String variableType = "X";
@@ -2031,7 +2031,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testResolveTaskThrowsAuthorizationException() {
+  void testResolveTaskThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(taskServiceMock).resolveTask(anyString(), Mockito.any());
 
@@ -2048,7 +2048,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUnsuccessfulResolving() {
+  void testUnsuccessfulResolving() {
     doThrow(new ProcessEngineException("expected exception")).when(taskServiceMock).resolveTask(any(), any());
 
     given().pathParam("id", EXAMPLE_TASK_ID)
@@ -2062,7 +2062,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetNonExistingTask() {
+  void testGetNonExistingTask() {
     when(mockQuery.singleResult()).thenReturn(null);
 
     given().pathParam("id", NON_EXISTING_ID)
@@ -2074,7 +2074,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetNonExistingForm() {
+  void testGetNonExistingForm() {
     when(formServiceMock.getTaskFormData(anyString())).thenThrow(new ProcessEngineException("Expected exception: task does not exist."));
 
     given().pathParam("id", NON_EXISTING_ID)
@@ -2086,7 +2086,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDelegateTask() {
+  void testDelegateTask() {
     Map<String, Object> json = new HashMap<>();
     json.put("userId", EXAMPLE_USER_ID);
 
@@ -2101,7 +2101,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUnsuccessfulDelegateTask() {
+  void testUnsuccessfulDelegateTask() {
     doThrow(new ProcessEngineException("expected exception")).when(taskServiceMock).delegateTask(any(String.class), any(String.class));
 
     Map<String, Object> json = new HashMap<>();
@@ -2118,7 +2118,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDelegateTaskThrowsAuthorizationException() {
+  void testDelegateTaskThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(taskServiceMock).delegateTask(any(), any());
 
@@ -2137,7 +2137,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskComment() {
+  void testGetSingleTaskComment() {
     given()
       .pathParam("id", EXAMPLE_TASK_ID)
       .pathParam("commentId", EXAMPLE_TASK_COMMENT_ID)
@@ -2158,7 +2158,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskCommentWithHistoryDisabled() {
+  void testGetSingleTaskCommentWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2173,7 +2173,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskCommentForNonExistingComment() {
+  void testGetSingleTaskCommentForNonExistingComment() {
     given()
       .pathParam("id", EXAMPLE_TASK_ID)
       .pathParam("commentId", NON_EXISTING_ID)
@@ -2185,7 +2185,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskCommentForNonExistingCommentWithHistoryDisabled() {
+  void testGetSingleTaskCommentForNonExistingCommentWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2199,7 +2199,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskCommentForNonExistingTask() {
+  void testGetSingleTaskCommentForNonExistingTask() {
     given()
       .pathParam("id", NON_EXISTING_ID)
       .pathParam("commentId", EXAMPLE_TASK_COMMENT_ID)
@@ -2212,7 +2212,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskCommentForNonExistingTaskWithHistoryDisabled() {
+  void testGetSingleTaskCommentForNonExistingTaskWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2227,7 +2227,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskComments() {
+  void testGetTaskComments() {
     Response response = given()
       .pathParam("id", EXAMPLE_TASK_ID)
       .header("accept", MediaType.APPLICATION_JSON)
@@ -2243,7 +2243,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskCommentsWithHistoryDisabled() {
+  void testGetTaskCommentsWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2258,7 +2258,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskNonExistingComments() {
+  void testGetTaskNonExistingComments() {
     when(taskServiceMock.getTaskComments(EXAMPLE_TASK_ID)).thenReturn(Collections.<Comment>emptyList());
 
     given()
@@ -2273,7 +2273,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskNonExistingCommentsWithHistoryDisabled() {
+  void testGetTaskNonExistingCommentsWithHistoryDisabled() {
     mockHistoryDisabled();
     when(taskServiceMock.getTaskComments(EXAMPLE_TASK_ID)).thenReturn(Collections.<Comment>emptyList());
 
@@ -2289,7 +2289,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskCommentsForNonExistingTask() {
+  void testGetTaskCommentsForNonExistingTask() {
     when(historicTaskInstanceQueryMock.taskId(NON_EXISTING_ID)).thenReturn(historicTaskInstanceQueryMock);
     when(historicTaskInstanceQueryMock.singleResult()).thenReturn(null);
 
@@ -2305,7 +2305,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskCommentsForNonExistingTaskWithHistoryDisabled() {
+  void testGetTaskCommentsForNonExistingTaskWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2320,7 +2320,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testAddCompleteTaskComment() {
+  void testAddCompleteTaskComment() {
     Map<String, Object> json = new HashMap<>();
     json.put("message", EXAMPLE_TASK_COMMENT_FULL_MESSAGE);
 
@@ -2341,7 +2341,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void shouldAssignProcessInstanceIdToComment() {
+  void shouldAssignProcessInstanceIdToComment() {
     when(taskServiceMock.createComment(EXAMPLE_TASK_ID, EXAMPLE_PROCESS_INSTANCE_ID,
         EXAMPLE_TASK_COMMENT_FULL_MESSAGE)).thenReturn(mockTaskComment);
 
@@ -2367,7 +2367,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testAddCompleteTaskCommentWithHistoryDisabled() {
+  void testAddCompleteTaskCommentWithHistoryDisabled() {
 
     mockHistoryDisabled();
 
@@ -2387,7 +2387,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testAddCommentToNonExistingTask() {
+  void testAddCommentToNonExistingTask() {
     when(historicTaskInstanceQueryMock.taskId(NON_EXISTING_ID)).thenReturn(historicTaskInstanceQueryMock);
     when(historicTaskInstanceQueryMock.singleResult()).thenReturn(null);
 
@@ -2407,7 +2407,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testAddCommentToNonExistingTaskWithHistoryDisabled() {
+  void testAddCommentToNonExistingTaskWithHistoryDisabled() {
     mockHistoryDisabled();
 
     Map<String, Object> json = new HashMap<>();
@@ -2426,7 +2426,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testAddTaskCommentWithoutBody() {
+  void testAddTaskCommentWithoutBody() {
     given()
       .pathParam("id", EXAMPLE_TASK_ID)
       .header("accept", MediaType.APPLICATION_JSON)
@@ -2437,7 +2437,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testAddTaskCommentWithoutMessage() {
+  void testAddTaskCommentWithoutMessage() {
 
     doThrow(new ProcessEngineException("Message is null")).when(taskServiceMock).createComment(EXAMPLE_TASK_ID, null, null);
 
@@ -2454,7 +2454,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskAttachment() {
+  void testGetSingleTaskAttachment() {
     given()
       .pathParam("id", MockProvider.EXAMPLE_TASK_ID)
       .pathParam("attachmentId", MockProvider.EXAMPLE_TASK_ATTACHMENT_ID)
@@ -2473,7 +2473,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskAttachmentWithHistoryDisabled() {
+  void testGetSingleTaskAttachmentWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2488,7 +2488,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskAttachmentForNonExistingAttachmentId() {
+  void testGetSingleTaskAttachmentForNonExistingAttachmentId() {
     given()
       .pathParam("id", EXAMPLE_TASK_ID)
       .pathParam("attachmentId", NON_EXISTING_ID)
@@ -2499,7 +2499,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskAttachmentForNonExistingAttachmentIdWithHistoryDisabled() {
+  void testGetSingleTaskAttachmentForNonExistingAttachmentIdWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2513,7 +2513,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskAttachmentForNonExistingTask() {
+  void testGetSingleTaskAttachmentForNonExistingTask() {
     given()
       .pathParam("id", NON_EXISTING_ID)
       .pathParam("attachmentId", EXAMPLE_TASK_ATTACHMENT_ID)
@@ -2526,7 +2526,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskAttachmentForNonExistingTaskWithHistoryDisabled() {
+  void testGetSingleTaskAttachmentForNonExistingTaskWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2541,7 +2541,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskAttachments() {
+  void testGetTaskAttachments() {
     Response response = given().pathParam("id", MockProvider.EXAMPLE_TASK_ID)
       .header("accept", MediaType.APPLICATION_JSON)
       .then().expect()
@@ -2554,7 +2554,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskAttachmentsWithHistoryDisabled() {
+  void testGetTaskAttachmentsWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given().pathParam("id", MockProvider.EXAMPLE_TASK_ID)
@@ -2566,7 +2566,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskAttachmentsForNonExistingTaskId() {
+  void testGetTaskAttachmentsForNonExistingTaskId() {
     when(historicTaskInstanceQueryMock.taskId(NON_EXISTING_ID)).thenReturn(historicTaskInstanceQueryMock);
     when(historicTaskInstanceQueryMock.singleResult()).thenReturn(null);
 
@@ -2579,7 +2579,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskAttachmentsForNonExistingTaskWithHistoryDisabled() {
+  void testGetTaskAttachmentsForNonExistingTaskWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2594,7 +2594,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskAttachmentsForNonExistingAttachments() {
+  void testGetTaskAttachmentsForNonExistingAttachments() {
     when(taskServiceMock.getTaskAttachments(EXAMPLE_TASK_ID)).thenReturn(Collections.<Attachment>emptyList());
 
     given()
@@ -2609,7 +2609,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetTaskAttachmentsForNonExistingAttachmentsWithHistoryDisabled() {
+  void testGetTaskAttachmentsForNonExistingAttachmentsWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2624,7 +2624,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCreateCompleteTaskAttachmentWithContent() {
+  void testCreateCompleteTaskAttachmentWithContent() {
     Response response = given()
       .pathParam("id", EXAMPLE_TASK_ID)
       .multiPart("attachment-name", EXAMPLE_TASK_ATTACHMENT_NAME)
@@ -2641,7 +2641,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCreateTaskAttachmentWithContentToNonExistingTask() {
+  void testCreateTaskAttachmentWithContentToNonExistingTask() {
     when(historicTaskInstanceQueryMock.taskId(NON_EXISTING_ID)).thenReturn(historicTaskInstanceQueryMock);
     when(historicTaskInstanceQueryMock.singleResult()).thenReturn(null);
 
@@ -2660,7 +2660,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCreateCompleteTaskAttachmentWithUrl() {
+  void testCreateCompleteTaskAttachmentWithUrl() {
     Response response = given()
       .pathParam("id", EXAMPLE_TASK_ID)
       .multiPart("attachment-name", EXAMPLE_TASK_ATTACHMENT_NAME)
@@ -2677,7 +2677,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCreateCompleteTaskAttachmentWithUrlWithHistoryDisabled() {
+  void testCreateCompleteTaskAttachmentWithUrlWithHistoryDisabled() {
 
     mockHistoryDisabled();
 
@@ -2696,7 +2696,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCreateTaskAttachmentWithUrlToNonExistingTask() {
+  void testCreateTaskAttachmentWithUrlToNonExistingTask() {
     when(historicTaskInstanceQueryMock.taskId(NON_EXISTING_ID)).thenReturn(historicTaskInstanceQueryMock);
     when(historicTaskInstanceQueryMock.singleResult()).thenReturn(null);
 
@@ -2715,7 +2715,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCreateTaskAttachmentWithUrlToNonExistingTaskWithHistoryDisabled() {
+  void testCreateTaskAttachmentWithUrlToNonExistingTaskWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2733,7 +2733,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testCreateTaskAttachmentWithoutMultiparts() {
+  void testCreateTaskAttachmentWithoutMultiparts() {
     given()
       .pathParam("id", EXAMPLE_TASK_ID)
       .header("accept", MediaType.APPLICATION_JSON)
@@ -2744,7 +2744,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskAttachmentContent() {
+  void testGetSingleTaskAttachmentContent() {
     Response response = given()
       .pathParam("id", MockProvider.EXAMPLE_TASK_ID)
       .pathParam("attachmentId", MockProvider.EXAMPLE_TASK_ATTACHMENT_ID)
@@ -2757,7 +2757,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskAttachmentContentWithHistoryDisabled() {
+  void testGetSingleTaskAttachmentContentWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2771,7 +2771,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskAttachmentContentForNonExistingAttachmentId() {
+  void testGetSingleTaskAttachmentContentForNonExistingAttachmentId() {
     given()
       .pathParam("id", EXAMPLE_TASK_ID)
       .pathParam("attachmentId", NON_EXISTING_ID)
@@ -2781,7 +2781,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskAttachmentContentForNonExistingAttachmentIdWithHistoryDisabled() {
+  void testGetSingleTaskAttachmentContentForNonExistingAttachmentIdWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2794,7 +2794,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskAttachmentContentForNonExistingTask() {
+  void testGetSingleTaskAttachmentContentForNonExistingTask() {
     given()
       .pathParam("id", NON_EXISTING_ID)
       .pathParam("attachmentId", EXAMPLE_TASK_ATTACHMENT_ID)
@@ -2806,7 +2806,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetSingleTaskAttachmentContentForNonExistingTaskWithHistoryDisabled() {
+  void testGetSingleTaskAttachmentContentForNonExistingTaskWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2820,7 +2820,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteSingleTaskAttachment() {
+  void testDeleteSingleTaskAttachment() {
     given()
       .pathParam("id", MockProvider.EXAMPLE_TASK_ID)
       .pathParam("attachmentId", MockProvider.EXAMPLE_TASK_ATTACHMENT_ID)
@@ -2831,7 +2831,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteSingleTaskAttachmentWithHistoryDisabled() {
+  void testDeleteSingleTaskAttachmentWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2846,7 +2846,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteSingleTaskAttachmentForNonExistingAttachmentId() {
+  void testDeleteSingleTaskAttachmentForNonExistingAttachmentId() {
     doThrow(new ProcessEngineException()).when(taskServiceMock).deleteTaskAttachment(EXAMPLE_TASK_ID, NON_EXISTING_ID);
 
     given()
@@ -2859,7 +2859,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteSingleTaskAttachmentForNonExistingAttachmentIdWithHistoryDisabled() {
+  void testDeleteSingleTaskAttachmentForNonExistingAttachmentIdWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2873,7 +2873,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteSingleTaskAttachmentForNonExistingTask() {
+  void testDeleteSingleTaskAttachmentForNonExistingTask() {
     doThrow(new ProcessEngineException()).when(taskServiceMock).deleteTaskAttachment(NON_EXISTING_ID, EXAMPLE_TASK_ATTACHMENT_ID);
 
     given()
@@ -2888,7 +2888,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteSingleTaskAttachmentForNonExistingTaskWithHistoryDisabled() {
+  void testDeleteSingleTaskAttachmentForNonExistingTaskWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given()
@@ -2903,7 +2903,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteDeleteTask() {
+  void testDeleteDeleteTask() {
 
     given()
       .pathParam("id", EXAMPLE_TASK_ID)
@@ -2916,7 +2916,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPostCreateTask() {
+  void testPostCreateTask() {
     Map<String, Object> json = new HashMap<>();
 
     json.put("id", "anyTaskId");
@@ -2960,7 +2960,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPostCreateTaskPartialProperties() {
+  void testPostCreateTaskPartialProperties() {
     Map<String, Object> json = new HashMap<>();
 
     json.put("name", "A Task");
@@ -2998,7 +2998,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPostCreateTaskDelegationStateResolved() {
+  void testPostCreateTaskDelegationStateResolved() {
     Map<String, Object> json = new HashMap<>();
 
     json.put("delegationState", "RESOLVED");
@@ -3021,7 +3021,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPostCreateTaskDelegationStatePending() {
+  void testPostCreateTaskDelegationStatePending() {
     Map<String, Object> json = new HashMap<>();
 
     json.put("delegationState", "PENDING");
@@ -3044,7 +3044,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPostCreateTaskUnsupportedDelegationState() {
+  void testPostCreateTaskUnsupportedDelegationState() {
     Map<String, Object> json = new HashMap<>();
 
     json.put("delegationState", "unsupported");
@@ -3066,7 +3066,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPostCreateTaskLowercaseDelegationState() {
+  void testPostCreateTaskLowercaseDelegationState() {
     Map<String, Object> json = new HashMap<>();
 
     json.put("delegationState", "pending");
@@ -3089,7 +3089,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPostCreateTask_NotValidValueException() {
+  void testPostCreateTask_NotValidValueException() {
     Map<String, Object> json = new HashMap<>();
 
     json.put("id", "anyTaskId");
@@ -3112,7 +3112,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPostCreateTaskThrowsAuthorizationException() {
+  void testPostCreateTaskThrowsAuthorizationException() {
     Map<String, Object> json = new HashMap<>();
     json.put("id", "anyTaskId");
 
@@ -3132,7 +3132,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testSaveNewTaskThrowsAuthorizationException() {
+  void testSaveNewTaskThrowsAuthorizationException() {
     Map<String, Object> json = new HashMap<>();
     json.put("id", "anyTaskId");
 
@@ -3155,7 +3155,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPutUpdateTask() {
+  void testPutUpdateTask() {
     Map<String, Object> json = new HashMap<>();
 
     json.put("id", "anyTaskId");
@@ -3196,7 +3196,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPutUpdateTaskPartialProperties() {
+  void testPutUpdateTaskPartialProperties() {
     Map<String, Object> json = new HashMap<>();
 
     json.put("name", "A Task");
@@ -3231,7 +3231,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPutUpdateTaskNotFound() {
+  void testPutUpdateTaskNotFound() {
     when(mockQuery.singleResult()).thenReturn(null);
 
     given()
@@ -3249,7 +3249,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPutUpdateTaskDelegationStateResolved() {
+  void testPutUpdateTaskDelegationStateResolved() {
     Map<String, Object> json = new HashMap<>();
 
     json.put("delegationState", "RESOLVED");
@@ -3269,7 +3269,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPutUpdateTaskDelegationStatePending() {
+  void testPutUpdateTaskDelegationStatePending() {
     Map<String, Object> json = new HashMap<>();
 
     json.put("delegationState", "PENDING");
@@ -3292,7 +3292,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPutUpdateTaskUnsupportedDelegationState() {
+  void testPutUpdateTaskUnsupportedDelegationState() {
     Map<String, Object> json = new HashMap<>();
 
     json.put("delegationState", "unsupported");
@@ -3315,7 +3315,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPutUpdateTaskLowercaseDelegationState() {
+  void testPutUpdateTaskLowercaseDelegationState() {
     Map<String, Object> json = new HashMap<>();
 
     json.put("delegationState", "pending");
@@ -3338,7 +3338,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testPutUpdateTaskThrowsAuthorizationException() {
+  void testPutUpdateTaskThrowsAuthorizationException() {
     Map<String, Object> json = new HashMap<>();
     json.put("delegationState", "pending");
 
@@ -3358,7 +3358,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetDeployedTaskForm() {
+  void testGetDeployedTaskForm() {
     InputStream deployedFormMock = new ByteArrayInputStream("Test".getBytes());
     when(formServiceMock.getDeployedTaskForm(anyString())).thenReturn(deployedFormMock);
 
@@ -3375,7 +3375,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetDeployedTaskFormJson() {
+  void testGetDeployedTaskFormJson() {
     InputStream deployedFormMock = new ByteArrayInputStream("Test".getBytes());
     when(formServiceMock.getDeployedTaskForm(anyString())).thenReturn(deployedFormMock);
     when(mockTask.getFormKey()).thenReturn("test.form");
@@ -3393,7 +3393,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetDeployedTaskFormJsonUsingFormRef() {
+  void testGetDeployedTaskFormJsonUsingFormRef() {
     InputStream deployedFormMock = new ByteArrayInputStream("{\"id\":\"myForm\"}".getBytes());
     when(formServiceMock.getDeployedTaskForm(anyString())).thenReturn(deployedFormMock);
     when(mockTask.getFormKey()).thenReturn(null);
@@ -3412,7 +3412,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetDeployedTaskFormWithoutAuthorization() {
+  void testGetDeployedTaskFormWithoutAuthorization() {
     String message = "unauthorized";
     when(formServiceMock.getDeployedTaskForm(anyString()))
         .thenThrow(new AuthorizationException(message));
@@ -3427,7 +3427,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetDeployedTaskFormWithWrongFormKey() {
+  void testGetDeployedTaskFormWithWrongFormKey() {
     String message = "wrong key format";
     when(formServiceMock.getDeployedTaskForm(anyString()))
         .thenThrow(new BadUserRequestException(message));
@@ -3442,7 +3442,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetDeployedTaskFormWithUnexistingForm() {
+  void testGetDeployedTaskFormWithUnexistingForm() {
     String message = "not found";
     when(formServiceMock.getDeployedTaskForm(anyString()))
         .thenThrow(new NotFoundException(message));
@@ -3457,7 +3457,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testGetDeployedTaskFormWithUnexistingTask() {
+  void testGetDeployedTaskFormWithUnexistingTask() {
     InputStream deployedFormMock = new ByteArrayInputStream("Test".getBytes());
     when(formServiceMock.getDeployedTaskForm(anyString())).thenReturn(deployedFormMock);
     when(mockQuery.singleResult()).thenReturn(null);
@@ -3472,7 +3472,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testHandleBpmnError() {
+  void testHandleBpmnError() {
     Map<String, Object> parameters = new HashMap<>();
     parameters.put("errorCode", "anErrorCode");
     parameters.put("errorMessage", "anErrorMessage");
@@ -3492,7 +3492,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testHandleBpmnErrorWithVariables() {
+  void testHandleBpmnErrorWithVariables() {
     Map<String, Object> parameters = new HashMap<>();
     parameters.put("errorCode", "anErrorCode");
     Map<String, Object> variables = VariablesBuilder
@@ -3530,7 +3530,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testHandleBpmnErrorNonExistingTask() {
+  void testHandleBpmnErrorNonExistingTask() {
     doThrow(new NotFoundException())
       .when(taskServiceMock)
       .handleBpmnError(any(), any(), any(), any());
@@ -3550,7 +3550,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testHandleBpmnErrorNoErrorCode() {
+  void testHandleBpmnErrorNoErrorCode() {
     doThrow(new BadUserRequestException())
         .when(taskServiceMock)
         .handleBpmnError(any(), any(), any(), any());
@@ -3570,7 +3570,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testHandleBpmnErrorThrowsAuthorizationException() {
+  void testHandleBpmnErrorThrowsAuthorizationException() {
     doThrow(new AuthorizationException("aMessage"))
       .when(taskServiceMock)
       .handleBpmnError(any(), any(), any(), any());
@@ -3592,7 +3592,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testHandleBpmnErrorThrowsBadUserRequestException() {
+  void testHandleBpmnErrorThrowsBadUserRequestException() {
     doThrow(new BadUserRequestException("aMessage"))
       .when(taskServiceMock)
       .handleBpmnError(any(), any(), any(), any());
@@ -3615,7 +3615,7 @@ public class TaskRestServiceInteractionTest extends
 
 
   @Test
-  public void testHandleBpmnEscalation() {
+  void testHandleBpmnEscalation() {
     Map<String, Object> parameters = new HashMap<>();
     parameters.put("escalationCode", "anEscalationCode");
 
@@ -3634,7 +3634,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testHandleBpmnEscalationWithVariables() {
+  void testHandleBpmnEscalationWithVariables() {
     Map<String, Object> parameters = new HashMap<>();
     parameters.put("escalationCode", "anEscalationCode");
     Map<String, Object> variables = VariablesBuilder
@@ -3671,7 +3671,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testHandleBpmnEscalationNonExistingTask() {
+  void testHandleBpmnEscalationNonExistingTask() {
     doThrow(new NotFoundException("Task with id aTaskId does not exist"))
       .when(taskServiceMock)
       .handleEscalation(any(), any(), any());
@@ -3692,7 +3692,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testHandleBpmnEscalationThrowsAuthorizationException() {
+  void testHandleBpmnEscalationThrowsAuthorizationException() {
     doThrow(new AuthorizationException("aMessage"))
       .when(taskServiceMock)
       .handleEscalation(any(), any(), any());
@@ -3714,7 +3714,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testHandleBpmnEscalationThrowsBadUserRequestException() {
+  void testHandleBpmnEscalationThrowsBadUserRequestException() {
     doThrow(new BadUserRequestException("aMessage"))
       .when(taskServiceMock)
       .handleEscalation(any(), any(), any());
@@ -3736,7 +3736,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testHandleBpmnEscalationMissingEscalationCode() {
+  void testHandleBpmnEscalationMissingEscalationCode() {
     doThrow(new BadUserRequestException("aMessage"))
       .when(taskServiceMock)
       .handleEscalation(any(), any(), any());
@@ -3757,7 +3757,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteTaskCommentThrowsAuthorizationException() {
+  void testDeleteTaskCommentThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(taskServiceMock)
         .deleteTaskComment(MockProvider.EXAMPLE_TASK_ID, EXAMPLE_TASK_COMMENT_ID);
@@ -3773,7 +3773,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteTaskComment() {
+  void testDeleteTaskComment() {
     given().pathParam("id", MockProvider.EXAMPLE_TASK_ID)
         .pathParam("commentId", EXAMPLE_TASK_COMMENT_ID)
         .header("accept", MediaType.APPLICATION_JSON)
@@ -3786,7 +3786,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteTaskCommentWithHistoryDisabled() {
+  void testDeleteTaskCommentWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given().pathParam("id", MockProvider.EXAMPLE_TASK_ID)
@@ -3801,7 +3801,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteTaskCommentForNonExistingCommentId() {
+  void testDeleteTaskCommentForNonExistingCommentId() {
     doThrow(new NullValueException()).when(taskServiceMock).deleteTaskComment(EXAMPLE_TASK_ID, NON_EXISTING_ID);
 
     given().pathParam("id", EXAMPLE_TASK_ID)
@@ -3816,7 +3816,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteTaskCommentForNonExistingCommentIdWithHistoryDisabled() {
+  void testDeleteTaskCommentForNonExistingCommentIdWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given().pathParam("id", EXAMPLE_TASK_ID)
@@ -3831,7 +3831,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteTaskCommentForNonExistingTask() {
+  void testDeleteTaskCommentForNonExistingTask() {
     when(historicTaskInstanceQueryMock.taskId(NON_EXISTING_ID)).thenReturn(historicTaskInstanceQueryMock);
     when(historicTaskInstanceQueryMock.singleResult()).thenReturn(null);
 
@@ -3847,7 +3847,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteTaskCommentForNonExistingTaskWithHistoryDisabled() {
+  void testDeleteTaskCommentForNonExistingTaskWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given().pathParam("id", NON_EXISTING_ID)
@@ -3862,7 +3862,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteTaskCommentsThrowsAuthorizationException() {
+  void testDeleteTaskCommentsThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(taskServiceMock).deleteTaskComments(MockProvider.EXAMPLE_TASK_ID);
 
@@ -3876,7 +3876,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteTaskComments() {
+  void testDeleteTaskComments() {
     given().pathParam("id", MockProvider.EXAMPLE_TASK_ID)
         .header("accept", MediaType.APPLICATION_JSON)
         .then()
@@ -3888,7 +3888,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteTaskCommentsWithHistoryDisabled() {
+  void testDeleteTaskCommentsWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given().pathParam("id", MockProvider.EXAMPLE_TASK_ID)
@@ -3902,7 +3902,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteTaskCommentsForNonExistingTask() {
+  void testDeleteTaskCommentsForNonExistingTask() {
     when(historicTaskInstanceQueryMock.taskId(NON_EXISTING_ID)).thenReturn(historicTaskInstanceQueryMock);
     when(historicTaskInstanceQueryMock.singleResult()).thenReturn(null);
 
@@ -3917,7 +3917,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testDeleteTaskCommentsForNonExistingTaskWithHistoryDisabled() {
+  void testDeleteTaskCommentsForNonExistingTaskWithHistoryDisabled() {
     mockHistoryDisabled();
 
     given().pathParam("id", NON_EXISTING_ID)
@@ -3931,7 +3931,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUpdateTaskComment() {
+  void testUpdateTaskComment() {
     Map<String, Object> json = new HashMap<>();
 
     json.put("id", EXAMPLE_TASK_COMMENT_ID);
@@ -3951,7 +3951,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUpdateTaskCommentCommentIdNull() {
+  void testUpdateTaskCommentCommentIdNull() {
     String message = "expected exception";
     doThrow(new NullValueException(message)).when(taskServiceMock)
         .updateTaskComment(EXAMPLE_TASK_ID, null, EXAMPLE_TASK_COMMENT_FULL_MESSAGE);
@@ -3972,7 +3972,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUpdateTaskCommentMessageIdNull() {
+  void testUpdateTaskCommentMessageIdNull() {
     String message = "expected exception";
     doThrow(new NullValueException(message)).when(taskServiceMock)
         .updateTaskComment(EXAMPLE_TASK_ID, EXAMPLE_TASK_COMMENT_ID, null);
@@ -3993,7 +3993,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUpdateTaskCommentExtraProperties() {
+  void testUpdateTaskCommentExtraProperties() {
     Map<String, Object> json = new HashMap<>();
 
     //Only id and message are used
@@ -4019,7 +4019,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUpdateTaskCommentTaskIdNotFound() {
+  void testUpdateTaskCommentTaskIdNotFound() {
     when(historicTaskInstanceQueryMock.taskId(NON_EXISTING_ID)).thenReturn(historicTaskInstanceQueryMock);
     when(historicTaskInstanceQueryMock.singleResult()).thenReturn(null);
 
@@ -4042,7 +4042,7 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testUpdateTaskCommentThrowsAuthorizationException() {
+  void testUpdateTaskCommentThrowsAuthorizationException() {
     String message = "expected exception";
     doThrow(new AuthorizationException(message)).when(taskServiceMock)
         .updateTaskComment(EXAMPLE_TASK_ID, EXAMPLE_TASK_COMMENT_ID, EXAMPLE_TASK_COMMENT_FULL_MESSAGE);

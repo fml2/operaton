@@ -24,7 +24,7 @@ import org.operaton.bpm.engine.impl.calendar.DateTimeUtil;
 import org.operaton.bpm.engine.rest.AbstractRestServiceTest;
 import org.operaton.bpm.engine.rest.dto.converter.ReportResultToCsvConverter;
 import org.operaton.bpm.engine.rest.exception.InvalidRequestException;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 import static org.operaton.bpm.engine.query.PeriodUnit.MONTH;
 import static org.operaton.bpm.engine.query.PeriodUnit.QUARTER;
 import static org.operaton.bpm.engine.rest.helper.MockProvider.*;
@@ -37,10 +37,10 @@ import java.util.Map;
 
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.path.json.JsonPath.from;
@@ -60,15 +60,15 @@ import static org.mockito.Mockito.when;
  */
 public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String HISTORIC_PROCESS_INSTANCE_REPORT_URL = TEST_RESOURCE_ROOT_PATH + "/history/process-instance/report";
 
   protected HistoricProcessInstanceReport mockedReportQuery;
 
-  @Before
-  public void setUpRuntimeData() {
+  @BeforeEach
+  void setUpRuntimeData() {
     mockedReportQuery = setUpMockHistoricProcessInstanceReportQuery();
   }
 
@@ -94,7 +94,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testEmptyReportByMonth() {
+  void testEmptyReportByMonth() {
     given()
       .queryParam("reportType", "duration")
       .queryParam("periodUnit", "month")
@@ -110,7 +110,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testEmptyReportByQuarter() {
+  void testEmptyReportByQuarter() {
     given()
       .queryParam("reportType", "duration")
       .queryParam("periodUnit", "quarter")
@@ -126,7 +126,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testInvalidReportType() {
+  void testInvalidReportType() {
     given()
     .queryParam("reportType", "abc")
   .then()
@@ -139,7 +139,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testInvalidPeriodUnit() {
+  void testInvalidPeriodUnit() {
     given()
     .queryParam("periodUnit", "abc")
   .then()
@@ -152,7 +152,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testMissingReportType() {
+  void testMissingReportType() {
     given()
     .then()
       .expect()
@@ -164,7 +164,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testMissingPeriodUnit() {
+  void testMissingPeriodUnit() {
     given()
       .queryParam("reportType", "duration")
     .then()
@@ -177,7 +177,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testMissingAuthorization() {
+  void testMissingAuthorization() {
     String message = "not authorized";
     when(mockedReportQuery.duration(MONTH)).thenThrow(new AuthorizationException(message));
 
@@ -195,7 +195,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testDurationReportByMonth() {
+  void testDurationReportByMonth() {
     Response response = given()
         .queryParam("periodUnit", "month")
         .queryParam("reportType", "duration")
@@ -207,8 +207,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
           .get(HISTORIC_PROCESS_INSTANCE_REPORT_URL);
 
     String content = response.asString();
-    List<String> reports = from(content).getList("");
-    Assert.assertEquals("There should be one report returned.", 1, reports.size());
+    List<Map<String, Object>> reports = from(content).getList("");
     assertThat(reports.get(0)).as("The returned report should not be null.").isNotNull();
 
     long returnedAvg = from(content).getLong("[0].average");
@@ -217,15 +216,15 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
     int returnedPeriod = from(content).getInt("[0].period");
     String returnedPeriodUnit = from(content).getString("[0].periodUnit");
 
-    Assert.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_AVG, returnedAvg);
-    Assert.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_MAX, returnedMax);
-    Assert.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_MIN, returnedMin);
-    Assert.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_PERIOD, returnedPeriod);
-    Assert.assertEquals(MONTH.toString(), returnedPeriodUnit);
+    Assertions.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_AVG, returnedAvg);
+    Assertions.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_MAX, returnedMax);
+    Assertions.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_MIN, returnedMin);
+    Assertions.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_PERIOD, returnedPeriod);
+    Assertions.assertEquals(MONTH.toString(), returnedPeriodUnit);
   }
 
   @Test
-  public void testDurationReportByQuarter() {
+  void testDurationReportByQuarter() {
     Response response = given()
         .queryParam("periodUnit", "quarter")
         .queryParam("reportType", "duration")
@@ -237,8 +236,8 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
           .get(HISTORIC_PROCESS_INSTANCE_REPORT_URL);
 
     String content = response.asString();
-    List<String> reports = from(content).getList("");
-    Assert.assertEquals("There should be one report returned.", 1, reports.size());
+    List<Map<String, Object>> reports = from(content).getList("");
+    Assertions.assertEquals(1, reports.size(), "There should be one report returned.");
     assertThat(reports.get(0)).as("The returned report should not be null.").isNotNull();
 
     long returnedAvg = from(content).getLong("[0].average");
@@ -247,15 +246,15 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
     int returnedPeriod = from(content).getInt("[0].period");
     String returnedPeriodUnit = from(content).getString("[0].periodUnit");
 
-    Assert.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_AVG, returnedAvg);
-    Assert.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_MAX, returnedMax);
-    Assert.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_MIN, returnedMin);
-    Assert.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_PERIOD, returnedPeriod);
-    Assert.assertEquals(QUARTER.toString(), returnedPeriodUnit);
+    Assertions.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_AVG, returnedAvg);
+    Assertions.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_MAX, returnedMax);
+    Assertions.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_MIN, returnedMin);
+    Assertions.assertEquals(EXAMPLE_HISTORIC_PROC_INST_DURATION_REPORT_PERIOD, returnedPeriod);
+    Assertions.assertEquals(QUARTER.toString(), returnedPeriodUnit);
   }
 
   @Test
-  public void testListParameters() {
+  void testListParameters() {
     String aProcDefId = "anProcDefId";
     String anotherProcDefId = "anotherProcDefId";
 
@@ -280,7 +279,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testHistoricBeforeAndAfterStartTimeQuery() {
+  void testHistoricBeforeAndAfterStartTimeQuery() {
     given()
       .queryParam("periodUnit", "month")
       .queryParam("reportType", "duration")
@@ -297,7 +296,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testEmptyCsvReportByMonth() {
+  void testEmptyCsvReportByMonth() {
     given()
       .queryParam("reportType", "duration")
       .queryParam("periodUnit", "month")
@@ -317,7 +316,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testEmptyCsvReportByQuarter() {
+  void testEmptyCsvReportByQuarter() {
     given()
       .queryParam("reportType", "duration")
       .queryParam("periodUnit", "quarter")
@@ -337,7 +336,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testCsvInvalidReportType() {
+  void testCsvInvalidReportType() {
     given()
     .queryParam("reportType", "abc")
   .then()
@@ -350,7 +349,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testCsvInvalidPeriodUnit() {
+  void testCsvInvalidPeriodUnit() {
     given()
     .queryParam("periodUnit", "abc")
   .then()
@@ -363,7 +362,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testCsvMissingReportType() {
+  void testCsvMissingReportType() {
     given()
     .then()
       .expect()
@@ -375,7 +374,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testCsvMissingPeriodUnit() {
+  void testCsvMissingPeriodUnit() {
     given()
       .queryParam("reportType", "duration")
     .then()
@@ -388,7 +387,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testCsvMissingAuthorization() {
+  void testCsvMissingAuthorization() {
     String message = "not authorized";
     when(mockedReportQuery.duration(MONTH)).thenThrow(new AuthorizationException(message));
 
@@ -406,7 +405,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testCsvDurationReportByMonth() {
+  void testCsvDurationReportByMonth() {
     Response response = given()
         .queryParam("reportType", "duration")
         .queryParam("periodUnit", "month")
@@ -429,7 +428,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testCsvDurationReportByQuarter() {
+  void testCsvDurationReportByQuarter() {
     Response response = given()
         .queryParam("reportType", "duration")
         .queryParam("periodUnit", "quarter")
@@ -453,7 +452,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testApplicationCsvDurationReportByMonth() {
+  void testApplicationCsvDurationReportByMonth() {
     Response response = given()
         .queryParam("reportType", "duration")
         .queryParam("periodUnit", "month")
@@ -477,7 +476,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testApplicationCsvDurationReportByQuarter() {
+  void testApplicationCsvDurationReportByQuarter() {
     Response response = given()
         .queryParam("reportType", "duration")
         .queryParam("periodUnit", "quarter")
@@ -501,7 +500,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testCsvListParameters() {
+  void testCsvListParameters() {
     String aProcDefId = "anProcDefId";
     String anotherProcDefId = "anotherProcDefId";
 
@@ -530,7 +529,7 @@ public class HistoricProcessInstanceRestServiceReportTest extends AbstractRestSe
   }
 
   @Test
-  public void testCsvHistoricBeforeAndAfterStartTimeQuery() {
+  void testCsvHistoricBeforeAndAfterStartTimeQuery() {
     given()
       .queryParam("periodUnit", "month")
       .queryParam("reportType", "duration")

@@ -26,16 +26,16 @@ import jakarta.ws.rs.core.Response.Status;
 import org.operaton.bpm.engine.AuthorizationException;
 import org.operaton.bpm.engine.ProcessEngineException;
 import org.operaton.bpm.engine.rest.exception.RestException;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 
 import io.restassured.http.ContentType;
 
 public class ExceptionHandlerTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   private static final String EXCEPTION_RESOURCE_URL = TEST_RESOURCE_ROOT_PATH + "/unannotated";
 
@@ -48,7 +48,7 @@ public class ExceptionHandlerTest extends AbstractRestServiceTest {
 
 
   @Test
-  public void testGeneralExceptionHandler() {
+  void testGeneralExceptionHandler() {
     given().header(ACCEPT_WILDCARD_HEADER)
     .expect().contentType(ContentType.JSON)
       .statusCode(Status.INTERNAL_SERVER_ERROR.getStatusCode())
@@ -59,7 +59,7 @@ public class ExceptionHandlerTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testRestExceptionHandler() {
+  void testRestExceptionHandler() {
     given().header(ACCEPT_WILDCARD_HEADER)
     .expect().contentType(ContentType.JSON)
       .statusCode(Status.BAD_REQUEST.getStatusCode())
@@ -70,7 +70,7 @@ public class ExceptionHandlerTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testProcessEngineExceptionHandler() {
+  void testProcessEngineExceptionHandler() {
     given().header(ACCEPT_WILDCARD_HEADER)
     .expect().contentType(ContentType.JSON)
       .statusCode(Status.INTERNAL_SERVER_ERROR.getStatusCode())
@@ -81,7 +81,7 @@ public class ExceptionHandlerTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testAuthorizationExceptionHandler() {
+  void testAuthorizationExceptionHandler() {
   //    TODO remove "resourceName", "resourceId", "permissionName" once the deprecated methods from AuthorizationException are removed
     given().header(ACCEPT_WILDCARD_HEADER)
     .expect().contentType(ContentType.JSON)
@@ -100,7 +100,7 @@ public class ExceptionHandlerTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testAuthorizationExceptionWithMultipleMissingAuthorizationsHandler() {
+  void testAuthorizationExceptionWithMultipleMissingAuthorizationsHandler() {
   //    TODO remove "resourceName", "resourceId", "permissionName" once the deprecated methods from AuthorizationException are removed
     given().header(ACCEPT_WILDCARD_HEADER)
     .expect().contentType(ContentType.JSON)
@@ -121,7 +121,7 @@ public class ExceptionHandlerTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testThrowableHandler() {
+  void testThrowableHandler() {
     given().header(ACCEPT_WILDCARD_HEADER)
       .expect().contentType(ContentType.JSON)
       .statusCode(Status.INTERNAL_SERVER_ERROR.getStatusCode())

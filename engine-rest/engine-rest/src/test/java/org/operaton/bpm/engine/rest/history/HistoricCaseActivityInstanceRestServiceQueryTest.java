@@ -44,18 +44,18 @@ import org.operaton.bpm.engine.impl.calendar.DateTimeUtil;
 import org.operaton.bpm.engine.rest.AbstractRestServiceTest;
 import org.operaton.bpm.engine.rest.exception.InvalidRequestException;
 import org.operaton.bpm.engine.rest.helper.MockProvider;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String HISTORIC_CASE_ACTIVITY_INSTANCE_RESOURCE_URL = TEST_RESOURCE_ROOT_PATH + "/history/case-activity-instance";
 
@@ -63,8 +63,8 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
 
   protected HistoricCaseActivityInstanceQuery mockedQuery;
 
-  @Before
-  public void setUpRuntimeData() {
+  @BeforeEach
+  void setUpRuntimeData() {
     mockedQuery = setUpMockHistoricCaseActivityInstanceQuery(MockProvider.createMockHistoricCaseActivityInstances());
   }
 
@@ -79,7 +79,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testEmptyQuery() {
+  void testEmptyQuery() {
     String queryKey = "";
     given()
       .queryParam("caseInstanceId", queryKey)
@@ -91,7 +91,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testNoParametersQuery() {
+  void testNoParametersQuery() {
     expect()
       .statusCode(Status.OK.getStatusCode())
     .when()
@@ -102,7 +102,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testInvalidSortingOptions() {
+  void testInvalidSortingOptions() {
     executeAndVerifySorting("anInvalidSortByOption", "asc", Status.BAD_REQUEST);
     executeAndVerifySorting("instanceId", "anInvalidSortOrderOption", Status.BAD_REQUEST);
   }
@@ -119,7 +119,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testSortByParameterOnly() {
+  void testSortByParameterOnly() {
     given()
       .queryParam("sortBy", "caseInstanceId")
     .then().expect()
@@ -132,7 +132,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testSortOrderParameterOnly() {
+  void testSortOrderParameterOnly() {
     given()
     .queryParam("sortOrder", "asc")
   .then().expect()
@@ -145,7 +145,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testSortingParameters() {
+  void testSortingParameters() {
     InOrder inOrder = Mockito.inOrder(mockedQuery);
     executeAndVerifySorting("caseActivityInstanceId", "asc", Status.OK);
     inOrder.verify(mockedQuery).orderByHistoricCaseActivityInstanceId();
@@ -258,7 +258,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testSuccessfulPagination() {
+  void testSuccessfulPagination() {
     int firstResult = 0;
     int maxResults = 10;
 
@@ -274,7 +274,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testMissingFirstResultParameter() {
+  void testMissingFirstResultParameter() {
     int maxResults = 10;
 
     given()
@@ -288,7 +288,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testMissingMaxResultsParameter() {
+  void testMissingMaxResultsParameter() {
     int firstResult = 10;
 
     given()
@@ -302,7 +302,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testQueryCount() {
+  void testQueryCount() {
     expect()
       .statusCode(Status.OK.getStatusCode())
       .body("count", equalTo(1))
@@ -313,7 +313,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testSimpleHistoricActivityQuery() {
+  void testSimpleHistoricActivityQuery() {
     String caseInstanceId = MockProvider.EXAMPLE_CASE_INSTANCE_ID;
 
     Response response = given()
@@ -328,8 +328,8 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
     inOrder.verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> instances = from(content).getList("");
-    Assert.assertEquals(1, instances.size());
+    List<Map<String, Object>> instances = from(content).getList("");
+    Assertions.assertEquals(1, instances.size());
     assertThat(instances.get(0)).isNotNull();
 
     String returnedId = from(content).getString("[0].id");
@@ -355,32 +355,32 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
     boolean completed = from(content).getBoolean("[0].completed");
     boolean terminated = from(content).getBoolean("[0].terminated");
 
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_ID, returnedId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_PARENT_CASE_ACTIVITY_INSTANCE_ID, returnedParentCaseActivityInstanceId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_ID, returnedCaseActivityId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_NAME, returnedCaseActivityName);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_TYPE, returnedCaseActivityType);
-    Assert.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_ID, returnedCaseDefinitionId);
-    Assert.assertEquals(MockProvider.EXAMPLE_CASE_INSTANCE_ID, returnedCaseInstanceId);
-    Assert.assertEquals(MockProvider.EXAMPLE_CASE_EXECUTION_ID, returnedCaseExecutionId);
-    Assert.assertEquals(MockProvider.EXAMPLE_TASK_ID, returnedTaskId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_CALLED_PROCESS_INSTANCE_ID, returnedCalledProcessInstanceId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_CALLED_CASE_INSTANCE_ID, returnedCalledCaseInstanceId);
-    Assert.assertEquals(MockProvider.EXAMPLE_TENANT_ID, returnedTenantId);
-    Assert.assertEquals(DateTimeUtil.parseDate(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_CREATE_TIME), returnedCreateTime);
-    Assert.assertEquals(DateTimeUtil.parseDate(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_END_TIME), returnedEndTime);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_DURATION, returnedDurationInMillis);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_IS_REQUIRED, required);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_IS_AVAILABLE, available);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_IS_ENABLED, enabled);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_IS_DISABLED, disabled);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_IS_ACTIVE, active);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_IS_COMPLETED, completed);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_IS_TERMINATED, terminated);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_ID, returnedId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_PARENT_CASE_ACTIVITY_INSTANCE_ID, returnedParentCaseActivityInstanceId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_ID, returnedCaseActivityId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_NAME, returnedCaseActivityName);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_TYPE, returnedCaseActivityType);
+    Assertions.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_ID, returnedCaseDefinitionId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_CASE_INSTANCE_ID, returnedCaseInstanceId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_CASE_EXECUTION_ID, returnedCaseExecutionId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_TASK_ID, returnedTaskId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_CALLED_PROCESS_INSTANCE_ID, returnedCalledProcessInstanceId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_CALLED_CASE_INSTANCE_ID, returnedCalledCaseInstanceId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_TENANT_ID, returnedTenantId);
+    Assertions.assertEquals(DateTimeUtil.parseDate(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_CREATE_TIME), returnedCreateTime);
+    Assertions.assertEquals(DateTimeUtil.parseDate(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_END_TIME), returnedEndTime);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_DURATION, returnedDurationInMillis);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_IS_REQUIRED, required);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_IS_AVAILABLE, available);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_IS_ENABLED, enabled);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_IS_DISABLED, disabled);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_IS_ACTIVE, active);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_IS_COMPLETED, completed);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_IS_TERMINATED, terminated);
   }
 
   @Test
-  public void testAdditionalParameters() {
+  void testAdditionalParameters() {
     Map<String, String> stringQueryParameters = getCompleteStringQueryParameters();
 
     given()
@@ -394,7 +394,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testBooleanParameters() {
+  void testBooleanParameters() {
     Map<String, Boolean> params = getCompleteBooleanQueryParameters();
 
     given()
@@ -495,7 +495,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testFinishedHistoricCaseActivityQuery() {
+  void testFinishedHistoricCaseActivityQuery() {
     Response response = given()
         .queryParam("finished", true)
       .then().expect()
@@ -508,19 +508,19 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
     inOrder.verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> instances = from(content).getList("");
-    Assert.assertEquals(1, instances.size());
+    List<Map<String, Object>> instances = from(content).getList("");
+    Assertions.assertEquals(1, instances.size());
     assertThat(instances.get(0)).isNotNull();
 
     String returnedCaseDefinitionId = from(content).getString("[0].caseDefinitionId");
     String returnedActivityEndTime = from(content).getString("[0].endTime");
 
-    Assert.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_ID, returnedCaseDefinitionId);
-    Assert.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_END_TIME, returnedActivityEndTime);
+    Assertions.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_ID, returnedCaseDefinitionId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_END_TIME, returnedActivityEndTime);
   }
 
   @Test
-  public void testUnfinishedHistoricCaseActivityQuery() {
+  void testUnfinishedHistoricCaseActivityQuery() {
     List<HistoricCaseActivityInstance> mockedHistoricCaseActivityInstances = MockProvider.createMockRunningHistoricCaseActivityInstances();
     HistoricCaseActivityInstanceQuery mockedHistoricCaseActivityInstanceQuery = mock(HistoricCaseActivityInstanceQuery.class);
     when(mockedHistoricCaseActivityInstanceQuery.list()).thenReturn(mockedHistoricCaseActivityInstances);
@@ -538,19 +538,19 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
     inOrder.verify(mockedHistoricCaseActivityInstanceQuery).list();
 
     String content = response.asString();
-    List<String> instances = from(content).getList("");
-    Assert.assertEquals(1, instances.size());
+    List<Map<String, Object>> instances = from(content).getList("");
+    Assertions.assertEquals(1, instances.size());
     assertThat(instances.get(0)).isNotNull();
 
     String returnedCaseDefinitionId = from(content).getString("[0].caseDefinitionId");
     String returnedActivityEndTime = from(content).getString("[0].endTime");
 
-    Assert.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_ID, returnedCaseDefinitionId);
+    Assertions.assertEquals(MockProvider.EXAMPLE_CASE_DEFINITION_ID, returnedCaseDefinitionId);
     assertThat(returnedActivityEndTime).isNull();
   }
 
   @Test
-  public void testHistoricAfterAndBeforeCreateTimeQuery() {
+  void testHistoricAfterAndBeforeCreateTimeQuery() {
     given()
       .queryParam("createdAfter", MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_CREATED_AFTER)
       .queryParam("createdBefore", MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_CREATED_BEFORE)
@@ -581,7 +581,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testHistoricAfterAndBeforeEndTimeQuery() {
+  void testHistoricAfterAndBeforeEndTimeQuery() {
     given()
       .queryParam("endedAfter", MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_ENDED_AFTER)
       .queryParam("endedBefore", MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_ENDED_BEFORE)
@@ -612,7 +612,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testTenantIdListParameter() {
+  void testTenantIdListParameter() {
     mockedQuery = setUpMockHistoricCaseActivityInstanceQuery(createMockHistoricCaseActivityInstancesTwoTenants());
 
     Response response = given()
@@ -626,7 +626,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> historicCaseActivityInstances = from(content).getList("");
+    List<Map<String, Object>> historicCaseActivityInstances = from(content).getList("");
     assertThat(historicCaseActivityInstances).hasSize(2);
 
     String returnedTenantId1 = from(content).getString("[0].tenantId");
@@ -637,7 +637,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testQueryWithoutTenantIdQueryParameter() {
+  void testQueryWithoutTenantIdQueryParameter() {
     // given
     HistoricCaseActivityInstance caseInstance = MockProvider.createMockHistoricCaseActivityInstance(null);
     mockedQuery = setUpMockHistoricCaseActivityInstanceQuery(Collections.singletonList(caseInstance));
@@ -655,7 +655,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
     verify(mockedQuery).list();
 
     String content = response.asString();
-    List<String> definitions = from(content).getList("");
+    List<Map<String, Object>> definitions = from(content).getList("");
     assertThat(definitions).hasSize(1);
 
     String returnedTenantId = from(content).getString("[0].tenantId");
@@ -663,7 +663,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testCaseActivityInstanceIdListParameter() {
+  void testCaseActivityInstanceIdListParameter() {
 
     given()
       .queryParam("caseActivityInstanceIdIn", MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_INSTANCE_ID + "," + MockProvider.EXAMPLE_HISTORIC_ANOTHER_CASE_ACTIVITY_INSTANCE_ID)
@@ -677,7 +677,7 @@ public class HistoricCaseActivityInstanceRestServiceQueryTest extends AbstractRe
   }
 
   @Test
-  public void testCaseActivityIdListParameter() {
+  void testCaseActivityIdListParameter() {
 
     given()
       .queryParam("caseActivityIdIn", MockProvider.EXAMPLE_HISTORIC_CASE_ACTIVITY_ID + "," + MockProvider.EXAMPLE_HISTORIC_ANOTHER_CASE_ACTIVITY_ID)

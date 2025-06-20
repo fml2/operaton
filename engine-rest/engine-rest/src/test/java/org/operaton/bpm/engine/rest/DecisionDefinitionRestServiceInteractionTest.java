@@ -62,20 +62,20 @@ import org.operaton.bpm.engine.rest.helper.MockDecisionResultBuilder;
 import org.operaton.bpm.engine.rest.helper.MockProvider;
 import org.operaton.bpm.engine.rest.sub.repository.impl.ProcessDefinitionResourceImpl;
 import org.operaton.bpm.engine.rest.util.VariablesBuilder;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 import org.operaton.bpm.engine.variable.Variables;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 
 public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String DECISION_DEFINITION_URL = TEST_RESOURCE_ROOT_PATH + "/decision-definition";
   protected static final String SINGLE_DECISION_DEFINITION_URL = DECISION_DEFINITION_URL + "/{id}";
@@ -96,8 +96,8 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   private DecisionDefinitionQuery decisionDefinitionQueryMock;
   private DecisionsEvaluationBuilder decisionEvaluationBuilderMock;
 
-  @Before
-  public void setUpRuntime() {
+  @BeforeEach
+  void setUpRuntime() {
     DecisionDefinition mockDecisionDefinition = MockProvider.createMockDecisionDefinition();
 
     setUpRuntimeData(mockDecisionDefinition);
@@ -140,7 +140,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testDecisionDefinitionDmnXmlRetrieval() {
+  void testDecisionDefinitionDmnXmlRetrieval() {
     Response response = given()
         .pathParam("id", MockProvider.EXAMPLE_DECISION_DEFINITION_ID)
       .then()
@@ -156,7 +156,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testDefinitionRetrieval() {
+  void testDefinitionRetrieval() {
     given()
       .pathParam("id", MockProvider.EXAMPLE_DECISION_DEFINITION_ID)
     .then()
@@ -179,7 +179,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testDecisionDefinitionDmnXmlRetrieval_ByKey() {
+  void testDecisionDefinitionDmnXmlRetrieval_ByKey() {
     Response response = given()
         .pathParam("key", MockProvider.EXAMPLE_DECISION_DEFINITION_KEY)
       .then()
@@ -195,7 +195,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testDefinitionRetrieval_ByKey() {
+  void testDefinitionRetrieval_ByKey() {
     given()
       .pathParam("key", MockProvider.EXAMPLE_DECISION_DEFINITION_KEY)
     .then()
@@ -219,7 +219,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testNonExistingDecisionDefinitionRetrieval_ByKey() {
+  void testNonExistingDecisionDefinitionRetrieval_ByKey() {
     String nonExistingKey = "aNonExistingDefinitionKey";
 
     when(repositoryServiceMock.createDecisionDefinitionQuery().decisionDefinitionKey(nonExistingKey)).thenReturn(decisionDefinitionQueryMock);
@@ -239,7 +239,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testDefinitionRetrieval_ByKeyAndTenantId() {
+  void testDefinitionRetrieval_ByKeyAndTenantId() {
     DecisionDefinition mockDefinition = MockProvider.mockDecisionDefinition().tenantId(MockProvider.EXAMPLE_TENANT_ID).build();
     setUpRuntimeData(mockDefinition);
 
@@ -267,7 +267,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testNonExistingDecisionDefinitionRetrieval_ByKeyAndTenantId() {
+  void testNonExistingDecisionDefinitionRetrieval_ByKeyAndTenantId() {
     String nonExistingKey = "aNonExistingDefinitionKey";
     String nonExistingTenantId = "aNonExistingTenantId";
 
@@ -285,7 +285,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testEvaluateDecisionByKeyAndTenantId() {
+  void testEvaluateDecisionByKeyAndTenantId() {
     DecisionDefinition mockDefinition = MockProvider.mockDecisionDefinition().tenantId(MockProvider.EXAMPLE_TENANT_ID).build();
     setUpRuntimeData(mockDefinition);
 
@@ -318,7 +318,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testDecisionDiagramRetrieval() throws FileNotFoundException, URISyntaxException {
+  void testDecisionDiagramRetrieval() throws FileNotFoundException, URISyntaxException {
     // setup additional mock behavior
     File file = getFile("/processes/todo-process.png");
     when(repositoryServiceMock.getDecisionDiagram(MockProvider.EXAMPLE_DECISION_DEFINITION_ID))
@@ -344,7 +344,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testDecisionDiagramNullFilename() throws FileNotFoundException, URISyntaxException {
+  void testDecisionDiagramNullFilename() throws FileNotFoundException, URISyntaxException {
     // setup additional mock behavior
     File file = getFile("/processes/todo-process.png");
     when(repositoryServiceMock.getDecisionDefinition(MockProvider.EXAMPLE_DECISION_DEFINITION_ID).getDiagramResourceName())
@@ -371,7 +371,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testDecisionDiagramNotExist() {
+  void testDecisionDiagramNotExist() {
     // setup additional mock behavior
     when(repositoryServiceMock.getDecisionDiagram(MockProvider.EXAMPLE_DECISION_DEFINITION_ID)).thenReturn(null);
 
@@ -386,19 +386,19 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testDecisionDiagramMediaType() {
-    Assert.assertEquals("image/png", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.png"));
-    Assert.assertEquals("image/png", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.PNG"));
-    Assert.assertEquals("image/svg+xml", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.svg"));
-    Assert.assertEquals("image/jpeg", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.jpeg"));
-    Assert.assertEquals("image/jpeg", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.jpg"));
-    Assert.assertEquals("image/gif", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.gif"));
-    Assert.assertEquals("image/bmp", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.bmp"));
-    Assert.assertEquals("application/octet-stream", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.UNKNOWN"));
+  void testDecisionDiagramMediaType() {
+    Assertions.assertEquals("image/png", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.png"));
+    Assertions.assertEquals("image/png", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.PNG"));
+    Assertions.assertEquals("image/svg+xml", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.svg"));
+    Assertions.assertEquals("image/jpeg", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.jpeg"));
+    Assertions.assertEquals("image/jpeg", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.jpg"));
+    Assertions.assertEquals("image/gif", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.gif"));
+    Assertions.assertEquals("image/bmp", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.bmp"));
+    Assertions.assertEquals("application/octet-stream", ProcessDefinitionResourceImpl.getMediaTypeForFileSuffix("decision.UNKNOWN"));
   }
 
   @Test
-  public void testEvaluateDecisionByKey() {
+  void testEvaluateDecisionByKey() {
     DmnDecisionResult decisionResult = MockProvider.createMockDecisionResult();
 
     when(decisionEvaluationBuilderMock.evaluate()).thenReturn(decisionResult);
@@ -426,7 +426,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testEvaluateDecisionById() {
+  void testEvaluateDecisionById() {
     DmnDecisionResult decisionResult = MockProvider.createMockDecisionResult();
 
     when(decisionEvaluationBuilderMock.evaluate()).thenReturn(decisionResult);
@@ -454,7 +454,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testEvaluateDecisionSingleDecisionOutput() {
+  void testEvaluateDecisionSingleDecisionOutput() {
     DmnDecisionResult decisionResult = new MockDecisionResultBuilder()
         .resultEntries()
           .entry("status", Variables.stringValue("gold"))
@@ -477,7 +477,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testEvaluateDecisionMultipleDecisionOutputs() {
+  void testEvaluateDecisionMultipleDecisionOutputs() {
     DmnDecisionResult decisionResult = new MockDecisionResultBuilder()
         .resultEntries()
           .entry("status", Variables.stringValue("gold"))
@@ -504,7 +504,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testEvaluateDecisionMultipleDecisionValues() {
+  void testEvaluateDecisionMultipleDecisionValues() {
     DmnDecisionResult decisionResult = new MockDecisionResultBuilder()
         .resultEntries()
           .entry("status", Variables.stringValue("gold"))
@@ -529,7 +529,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testEvaluateDecision_NotFound() {
+  void testEvaluateDecision_NotFound() {
     String message = "expected message";
     when(decisionEvaluationBuilderMock.evaluate()).thenThrow(new NotFoundException(message));
 
@@ -546,7 +546,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testEvaluateDecisionByKey_NotFound() {
+  void testEvaluateDecisionByKey_NotFound() {
     String message = "expected message";
     when(decisionEvaluationBuilderMock.evaluate()).thenThrow(new NotFoundException(message));
 
@@ -563,7 +563,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void shouldReturnErrorCode() {
+  void shouldReturnErrorCode() {
     when(decisionEvaluationBuilderMock.evaluate())
         .thenThrow(new ProcessEngineException("foo", 123));
 
@@ -581,7 +581,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testEvaluateDecision_NotValid() {
+  void testEvaluateDecision_NotValid() {
     String message = "expected message";
     when(decisionEvaluationBuilderMock.evaluate()).thenThrow(new NotValidException(message));
 
@@ -598,7 +598,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testEvaluateDecisionByKey_NotValid() {
+  void testEvaluateDecisionByKey_NotValid() {
     String message = "expected message";
     when(decisionEvaluationBuilderMock.evaluate()).thenThrow(new NotValidException(message));
 
@@ -615,7 +615,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testEvaluateDecision_NotAuthorized() {
+  void testEvaluateDecision_NotAuthorized() {
     String message = "expected message";
     when(decisionEvaluationBuilderMock.evaluate()).thenThrow(new AuthorizationException(message));
 
@@ -632,7 +632,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testEvaluateDecisionByKey_NotAuthorized() {
+  void testEvaluateDecisionByKey_NotAuthorized() {
     String message = "expected message";
     when(decisionEvaluationBuilderMock.evaluate()).thenThrow(new AuthorizationException(message));
 
@@ -649,7 +649,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testEvaluateDecision_ProcessEngineException() {
+  void testEvaluateDecision_ProcessEngineException() {
     String message = "expected message";
     when(decisionEvaluationBuilderMock.evaluate()).thenThrow(new ProcessEngineException(message));
 
@@ -666,7 +666,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testEvaluateDecisionByKey_ProcessEngineException() {
+  void testEvaluateDecisionByKey_ProcessEngineException() {
     String message = "expected message";
     when(decisionEvaluationBuilderMock.evaluate()).thenThrow(new ProcessEngineException(message));
 
@@ -683,7 +683,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testEvaluateDecision_DmnEngineException() {
+  void testEvaluateDecision_DmnEngineException() {
     String message = "expected message";
     when(decisionEvaluationBuilderMock.evaluate()).thenThrow(new DmnEngineException(message));
 
@@ -700,7 +700,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testEvaluateDecisionByKey_DmnEngineException() {
+  void testEvaluateDecisionByKey_DmnEngineException() {
     String message = "expected message";
     when(decisionEvaluationBuilderMock.evaluate()).thenThrow(new DmnEngineException(message));
 
@@ -717,7 +717,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testUpdateHistoryTimeToLive() {
+  void testUpdateHistoryTimeToLive() {
     given()
         .pathParam("id", MockProvider.EXAMPLE_DECISION_DEFINITION_ID)
         .body(new HistoryTimeToLiveDto(5))
@@ -731,7 +731,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testUpdateHistoryTimeToLiveNullValue() {
+  void testUpdateHistoryTimeToLiveNullValue() {
     given()
         .pathParam("id", MockProvider.EXAMPLE_DECISION_DEFINITION_ID)
         .body(new HistoryTimeToLiveDto())
@@ -745,7 +745,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testUpdateHistoryTimeToLiveNegativeValue() {
+  void testUpdateHistoryTimeToLiveNegativeValue() {
     String expectedMessage = "expectedMessage";
 
     doThrow(new BadUserRequestException(expectedMessage))
@@ -767,7 +767,7 @@ public class DecisionDefinitionRestServiceInteractionTest extends AbstractRestSe
   }
 
   @Test
-  public void testUpdateHistoryTimeToLiveAuthorizationException() {
+  void testUpdateHistoryTimeToLiveAuthorizationException() {
     String expectedMessage = "expectedMessage";
 
     doThrow(new AuthorizationException(expectedMessage))

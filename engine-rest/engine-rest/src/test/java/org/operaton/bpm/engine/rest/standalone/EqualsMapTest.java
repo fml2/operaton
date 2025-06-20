@@ -20,8 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.operaton.bpm.engine.rest.helper.EqualsMap;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,24 +29,24 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thorben Lindhauer
  *
  */
-public class EqualsMapTest {
+class EqualsMapTest {
 
   protected Map<String, Object> map1;
   protected Map<String, Object> map2;
 
-  @Before
-  public void setUp() {
+  @BeforeEach
+  void setUp() {
     map1 = new HashMap<>();
     map2 = new HashMap<>();
   }
 
   @Test
-  public void testMapsSame() {
+  void testMapsSame() {
     assertThat(new EqualsMap(map1).matches(map1)).isTrue();
   }
 
   @Test
-  public void testMapsEqual() {
+  void testMapsEqual() {
     map1.put("aKey", "aValue");
     map2.put("aKey", "aValue");
 
@@ -55,7 +55,7 @@ public class EqualsMapTest {
   }
 
   @Test
-  public void testMapsNotEqual() {
+  void testMapsNotEqual() {
     map1.put("aKey", "aValue");
 
     assertThat(new EqualsMap(map1).matches(map2)).isFalse();
@@ -63,7 +63,7 @@ public class EqualsMapTest {
   }
 
   @Test
-  public void testMapsNull() {
+  void testMapsNull() {
     assertThat(new EqualsMap(null).matches(map1)).isFalse();
     assertThat(new EqualsMap(map1).matches(null)).isFalse();
     assertThat(new EqualsMap(null).matches(null)).isTrue();

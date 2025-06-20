@@ -17,6 +17,7 @@
 package org.operaton.bpm.engine.rest.history;
 
 import static io.restassured.RestAssured.expect;
+import java.util.Map;
 import static io.restassured.RestAssured.given;
 import static io.restassured.path.json.JsonPath.from;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,11 +37,11 @@ import org.operaton.bpm.engine.history.CleanableHistoricBatchReport;
 import org.operaton.bpm.engine.history.CleanableHistoricBatchReportResult;
 import org.operaton.bpm.engine.rest.AbstractRestServiceTest;
 import org.operaton.bpm.engine.rest.exception.InvalidRequestException;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -54,8 +55,8 @@ public class CleanableHistoricBatchReportServiceTest extends AbstractRestService
   private static final long EXAMPLE_FINISHED_COUNT = 10l;
   private static final long EXAMPLE_CLEANABLE_COUNT = 5l;
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String HISTORY_URL = TEST_RESOURCE_ROOT_PATH + "/history/batch";
   protected static final String HISTORIC_REPORT_URL = HISTORY_URL + "/cleanable-batch-report";
@@ -63,8 +64,8 @@ public class CleanableHistoricBatchReportServiceTest extends AbstractRestService
 
   private CleanableHistoricBatchReport historicBatchReport;
 
-  @Before
-  public void setUpRuntimeData() {
+  @BeforeEach
+  void setUpRuntimeData() {
     setupHistoryReportMock();
   }
 
@@ -97,7 +98,7 @@ public class CleanableHistoricBatchReportServiceTest extends AbstractRestService
   }
 
   @Test
-  public void testGetReport() {
+  void testGetReport() {
     given()
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
@@ -109,7 +110,7 @@ public class CleanableHistoricBatchReportServiceTest extends AbstractRestService
   }
 
   @Test
-  public void testReportRetrieval() {
+  void testReportRetrieval() {
     Response response = given()
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
@@ -121,8 +122,8 @@ public class CleanableHistoricBatchReportServiceTest extends AbstractRestService
     inOrder.verify(historicBatchReport).list();
 
     String content = response.asString();
-    List<String> reportResults = from(content).getList("");
-    Assert.assertEquals("There should be two report results returned.", 2, reportResults.size());
+    List<Map<String, Object>> reportResults = from(content).getList("");
+    Assertions.assertEquals(2, reportResults.size(), "There should be two report results returned.");
     assertThat(reportResults.get(0)).isNotNull();
 
     String returnedBatchType = from(content).getString("[0].batchType");
@@ -130,14 +131,14 @@ public class CleanableHistoricBatchReportServiceTest extends AbstractRestService
     long returnedFinishedCount= from(content).getLong("[0].finishedBatchesCount");
     long returnedCleanableCount = from(content).getLong("[0].cleanableBatchesCount");
 
-    Assert.assertEquals(EXAMPLE_TYPE, returnedBatchType);
-    Assert.assertEquals(EXAMPLE_TTL, returnedTTL);
-    Assert.assertEquals(EXAMPLE_FINISHED_COUNT, returnedFinishedCount);
-    Assert.assertEquals(EXAMPLE_CLEANABLE_COUNT, returnedCleanableCount);
+    Assertions.assertEquals(EXAMPLE_TYPE, returnedBatchType);
+    Assertions.assertEquals(EXAMPLE_TTL, returnedTTL);
+    Assertions.assertEquals(EXAMPLE_FINISHED_COUNT, returnedFinishedCount);
+    Assertions.assertEquals(EXAMPLE_CLEANABLE_COUNT, returnedCleanableCount);
   }
 
   @Test
-  public void testMissingAuthorization() {
+  void testMissingAuthorization() {
     String message = "not authorized";
     when(historicBatchReport.list()).thenThrow(new AuthorizationException(message));
 
@@ -151,7 +152,7 @@ public class CleanableHistoricBatchReportServiceTest extends AbstractRestService
   }
 
   @Test
-  public void testQueryCount() {
+  void testQueryCount() {
     expect()
       .statusCode(Status.OK.getStatusCode())
       .body("count", equalTo(2))
@@ -162,7 +163,7 @@ public class CleanableHistoricBatchReportServiceTest extends AbstractRestService
   }
 
   @Test
-  public void testOrderByFinishedBatchOperationAsc() {
+  void testOrderByFinishedBatchOperationAsc() {
     given()
       .queryParam("sortBy", "finished")
       .queryParam("sortOrder", "asc")
@@ -176,7 +177,7 @@ public class CleanableHistoricBatchReportServiceTest extends AbstractRestService
   }
 
   @Test
-  public void testOrderByFinishedBatchOperationDesc() {
+  void testOrderByFinishedBatchOperationDesc() {
     given()
       .queryParam("sortBy", "finished")
       .queryParam("sortOrder", "desc")
@@ -190,7 +191,7 @@ public class CleanableHistoricBatchReportServiceTest extends AbstractRestService
   }
 
   @Test
-  public void testSortOrderParameterOnly() {
+  void testSortOrderParameterOnly() {
     given()
     .queryParam("sortOrder", "asc")
   .then()
@@ -204,7 +205,7 @@ public class CleanableHistoricBatchReportServiceTest extends AbstractRestService
   }
 
   @Test
-  public void testInvalidSortingOptions() {
+  void testInvalidSortingOptions() {
     executeAndVerifySorting("anInvalidSortByOption", "asc", Status.BAD_REQUEST);
     executeAndVerifySorting("finished", "anInvalidSortOrderOption", Status.BAD_REQUEST);
   }

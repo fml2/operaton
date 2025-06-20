@@ -33,10 +33,10 @@ import static org.mockito.Mockito.when;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import jakarta.ws.rs.core.Response.Status;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.Test;
 import org.operaton.bpm.engine.HistoryService;
 import org.operaton.bpm.engine.exception.NotFoundException;
 import org.operaton.bpm.engine.history.HistoricVariableInstance;
@@ -46,7 +46,7 @@ import org.operaton.bpm.engine.rest.helper.MockHistoricVariableInstanceBuilder;
 import org.operaton.bpm.engine.rest.helper.MockObjectValue;
 import org.operaton.bpm.engine.rest.helper.MockProvider;
 import org.operaton.bpm.engine.rest.helper.VariableTypeHelper;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 import org.operaton.bpm.engine.variable.Variables;
 import org.operaton.bpm.engine.variable.type.ValueType;
 import org.operaton.bpm.engine.variable.value.FileValue;
@@ -58,8 +58,8 @@ import org.operaton.bpm.engine.variable.value.ObjectValue;
  */
 public class HistoricVariableInstanceRestServiceInteractionTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String HISTORIC_VARIABLE_INSTANCE_RESOURCE_URL = TEST_RESOURCE_ROOT_PATH + "/history/variable-instance";
   protected static final String VARIABLE_INSTANCE_URL = HISTORIC_VARIABLE_INSTANCE_RESOURCE_URL + "/{id}";
@@ -69,8 +69,8 @@ public class HistoricVariableInstanceRestServiceInteractionTest extends Abstract
 
   protected HistoricVariableInstanceQuery variableInstanceQueryMock;
 
-  @Before
-  public void setupTestData() {
+  @BeforeEach
+  void setupTestData() {
     historyServiceMock = mock(HistoryService.class);
     variableInstanceQueryMock = mock(HistoricVariableInstanceQuery.class);
 
@@ -80,7 +80,7 @@ public class HistoricVariableInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testGetSingleVariableInstance() {
+  void testGetSingleVariableInstance() {
     MockHistoricVariableInstanceBuilder builder = MockProvider.mockHistoricVariableInstance();
 
     HistoricVariableInstance variableInstanceMock = builder.build();
@@ -119,7 +119,7 @@ public class HistoricVariableInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testGetSingleVariableInstanceDeserialized() {
+  void testGetSingleVariableInstanceDeserialized() {
     ObjectValue serializedValue = MockObjectValue.fromObjectValue(
         Variables.objectValue("a value").serializationDataFormat("aDataFormat").create())
         .objectTypeName("aTypeName");
@@ -163,7 +163,7 @@ public class HistoricVariableInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testGetSingleVariableInstanceSerialized() {
+  void testGetSingleVariableInstanceSerialized() {
     ObjectValue serializedValue = Variables.serializedObjectValue("a serialized value")
         .serializationDataFormat("aDataFormat").objectTypeName("aTypeName").create();
 
@@ -208,7 +208,7 @@ public class HistoricVariableInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testGetSingleVariableInstanceForBinaryVariable() {
+  void testGetSingleVariableInstanceForBinaryVariable() {
     MockHistoricVariableInstanceBuilder builder = MockProvider.mockHistoricVariableInstance();
 
     HistoricVariableInstance variableInstanceMock = builder
@@ -232,7 +232,7 @@ public class HistoricVariableInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testGetNonExistingVariableInstance() {
+  void testGetNonExistingVariableInstance() {
 
     String nonExistingId = "nonExistingId";
 
@@ -251,7 +251,7 @@ public class HistoricVariableInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testBinaryDataForBinaryVariable() {
+  void testBinaryDataForBinaryVariable() {
     final byte[] byteContent = "some bytes".getBytes();
     HistoricVariableInstance variableInstanceMock = MockProvider.mockHistoricVariableInstance()
         .typedValue(Variables.byteArrayValue(byteContent))
@@ -268,13 +268,13 @@ public class HistoricVariableInstanceRestServiceInteractionTest extends Abstract
     .when().get(VARIABLE_INSTANCE_BINARY_DATA_URL);
 
     byte[] responseBytes = response.getBody().asByteArray();
-    Assert.assertEquals(new String(byteContent), new String(responseBytes));
+    Assertions.assertEquals(new String(byteContent), new String(responseBytes));
     verify(variableInstanceQueryMock, never()).disableBinaryFetching();
 
   }
 
   @Test
-  public void testGetBinaryDataForFileVariable() {
+  void testGetBinaryDataForFileVariable() {
     String filename = "test.txt";
     byte[] byteContent = "test".getBytes();
     String encoding = UTF_8.name();
@@ -296,13 +296,13 @@ public class HistoricVariableInstanceRestServiceInteractionTest extends Abstract
     .when().get(VARIABLE_INSTANCE_BINARY_DATA_URL);
     //due to some problems with wildfly we gotta check this separately
     String contentType = response.getContentType();
-    assertThat(contentType).isEqualTo(ContentType.TEXT.toString() + ";charset=UTF-8");
+    assertThat(contentType).isEqualTo(ContentType.TEXT.toString() + "; charset=UTF-8");
 
     verify(variableInstanceQueryMock, never()).disableBinaryFetching();
   }
 
   @Test
-  public void testBinaryDataForNonBinaryVariable() {
+  void testBinaryDataForNonBinaryVariable() {
     HistoricVariableInstance variableInstanceMock = MockProvider.createMockHistoricVariableInstance();
 
     when(variableInstanceQueryMock.variableId(variableInstanceMock.getId())).thenReturn(variableInstanceQueryMock);
@@ -320,7 +320,7 @@ public class HistoricVariableInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testGetBinaryDataForNonExistingVariableInstance() {
+  void testGetBinaryDataForNonExistingVariableInstance() {
 
     String nonExistingId = "nonExistingId";
 
@@ -338,7 +338,7 @@ public class HistoricVariableInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testGetBinaryDataForNullFileVariable() {
+  void testGetBinaryDataForNullFileVariable() {
     String filename = "test.txt";
     byte[] byteContent = null;
     FileValue variableValue = Variables.fileValue(filename).file(byteContent).mimeType(ContentType.TEXT.toString()).create();
@@ -359,7 +359,7 @@ public class HistoricVariableInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testDeleteSingleVariableInstanceById() {
+  void testDeleteSingleVariableInstanceById() {
     given()
       .pathParam("id", MockProvider.EXAMPLE_VARIABLE_INSTANCE_ID)
     .expect()
@@ -371,7 +371,7 @@ public class HistoricVariableInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testDeleteNonExistingVariableInstanceById() {
+  void testDeleteNonExistingVariableInstanceById() {
     doThrow(new NotFoundException("No historic variable instance found with id: 'NON_EXISTING_ID'"))
     .when(historyServiceMock).deleteHistoricVariableInstance("NON_EXISTING_ID");
 

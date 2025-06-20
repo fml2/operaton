@@ -18,23 +18,26 @@ package org.operaton.bpm.engine.rest.history;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.operaton.bpm.engine.rest.util.JsonPathUtil.from;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.anyString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.operaton.bpm.engine.rest.util.JsonPathUtil.from;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.ws.rs.core.Response.Status;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 import org.operaton.bpm.engine.batch.history.HistoricBatch;
 import org.operaton.bpm.engine.batch.history.HistoricBatchQuery;
 import org.operaton.bpm.engine.impl.calendar.DateTimeUtil;
@@ -42,28 +45,24 @@ import org.operaton.bpm.engine.rest.AbstractRestServiceTest;
 import org.operaton.bpm.engine.rest.dto.history.batch.HistoricBatchDto;
 import org.operaton.bpm.engine.rest.exception.InvalidRequestException;
 import org.operaton.bpm.engine.rest.helper.MockProvider;
-import org.operaton.bpm.engine.rest.util.container.TestContainerRule;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.mockito.InOrder;
-import org.mockito.Mockito;
+import org.operaton.bpm.engine.rest.util.container.TestContainerExtension;
 
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 public class HistoricBatchRestServiceQueryTest extends AbstractRestServiceTest {
 
-  @ClassRule
-  public static TestContainerRule rule = new TestContainerRule();
+  @RegisterExtension
+  public static TestContainerExtension rule = new TestContainerExtension();
 
   protected static final String HISTORIC_BATCH_RESOURCE_URL = TEST_RESOURCE_ROOT_PATH + "/history/batch";
   protected static final String HISTORIC_BATCH_QUERY_COUNT_URL = HISTORIC_BATCH_RESOURCE_URL + "/count";
 
   protected HistoricBatchQuery queryMock;
 
-  @Before
-  public void setUpHistoricBatchQueryMock() {
+  @BeforeEach
+  void setUpHistoricBatchQueryMock() {
     List<HistoricBatch> mockHistoricBatches = MockProvider.createMockHistoricBatches();
     queryMock = mock(HistoricBatchQuery.class);
 
@@ -74,7 +73,7 @@ public class HistoricBatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testNoParametersQuery() {
+  void testNoParametersQuery() {
     Response response = given()
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
@@ -88,7 +87,7 @@ public class HistoricBatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testUnknownQueryParameter() {
+  void testUnknownQueryParameter() {
     Response response = given()
       .queryParam("unknown", "unknown")
     .then().expect()
@@ -103,7 +102,7 @@ public class HistoricBatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testSortByParameterOnly() {
+  void testSortByParameterOnly() {
     given()
       .queryParam("sortBy", "batchId")
     .then().expect()
@@ -118,7 +117,7 @@ public class HistoricBatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testSortOrderParameterOnly() {
+  void testSortOrderParameterOnly() {
     given()
       .queryParam("sortOrder", "asc")
     .then().expect()
@@ -133,7 +132,7 @@ public class HistoricBatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testHistoricBatchQueryByBatchId() {
+  void testHistoricBatchQueryByBatchId() {
     Response response = given()
       .queryParam("batchId", MockProvider.EXAMPLE_BATCH_ID)
     .then().expect()
@@ -150,7 +149,7 @@ public class HistoricBatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testHistoricBatchQueryByCompleted() {
+  void testHistoricBatchQueryByCompleted() {
     Response response = given()
       .queryParam("completed", true)
     .then().expect()
@@ -167,7 +166,7 @@ public class HistoricBatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testHistoricBatchQueryByNotCompleted() {
+  void testHistoricBatchQueryByNotCompleted() {
     Response response = given()
       .queryParam("completed", false)
     .then().expect()
@@ -184,7 +183,7 @@ public class HistoricBatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testFullHistoricBatchQuery() {
+  void testFullHistoricBatchQuery() {
     Response response = given()
         .queryParams(getCompleteQueryParameters())
       .then().expect()
@@ -200,7 +199,7 @@ public class HistoricBatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testQueryCount() {
+  void testQueryCount() {
     given()
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
@@ -213,7 +212,7 @@ public class HistoricBatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testFullQueryCount() {
+  void testFullQueryCount() {
     given()
       .params(getCompleteQueryParameters())
     .then().expect()
@@ -228,7 +227,7 @@ public class HistoricBatchRestServiceQueryTest extends AbstractRestServiceTest {
   }
 
   @Test
-  public void testSortingParameters() {
+  void testSortingParameters() {
     InOrder inOrder = Mockito.inOrder(queryMock);
     executeAndVerifySorting("batchId", "desc", Status.OK);
     inOrder.verify(queryMock).orderById();
@@ -300,7 +299,7 @@ public class HistoricBatchRestServiceQueryTest extends AbstractRestServiceTest {
 
   protected void verifyHistoricBatchListJson(String historicBatchListJson) {
     List<Object> batches = from(historicBatchListJson).get();
-    assertEquals("There should be one historic batch returned.", 1, batches.size());
+    assertEquals(1, batches.size(), "There should be one historic batch returned.");
 
     HistoricBatchDto historicBatch = from(historicBatchListJson).getObject("[0]", HistoricBatchDto.class);
     assertThat(historicBatch).as("The returned historic batch should not be null.").isNotNull();

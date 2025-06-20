@@ -25,26 +25,25 @@ import org.operaton.bpm.engine.ProcessEngineConfiguration;
 import org.operaton.bpm.engine.runtime.DeserializationTypeValidator;
 import org.operaton.bpm.engine.variable.VariableMap;
 import org.operaton.bpm.engine.variable.value.TypedValue;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
-public class VariableDeserializationTypeValidationTest {
+class VariableDeserializationTypeValidationTest {
 
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   protected AbstractVariablesResource variablesResourceSpy;
   protected DeserializationTypeValidator validator;
 
-  @Before
-  public void setUpMocks() {
+  @BeforeEach
+  void setUpMocks() {
     validator = Mockito.mock(DeserializationTypeValidator.class);
 
     ProcessEngineConfiguration configurationMock = Mockito.mock(ProcessEngineConfiguration.class);
@@ -56,7 +55,7 @@ public class VariableDeserializationTypeValidationTest {
   }
 
   @Test
-  public void shouldValidateNothingForPrimitiveClass() {
+  void shouldValidateNothingForPrimitiveClass() {
     // given
     JavaType type = TypeFactory.defaultInstance().constructType(int.class);
     setValidatorMockResult(true);
@@ -69,7 +68,7 @@ public class VariableDeserializationTypeValidationTest {
   }
 
   @Test
-  public void shouldValidateBaseTypeOnlyForSimpleClass() {
+  void shouldValidateBaseTypeOnlyForSimpleClass() {
     // given
     JavaType type = TypeFactory.defaultInstance().constructType(String.class);
     setValidatorMockResult(true);
@@ -83,7 +82,7 @@ public class VariableDeserializationTypeValidationTest {
   }
 
   @Test
-  public void shouldValidateBaseTypeOnlyForComplexClass() {
+  void shouldValidateBaseTypeOnlyForComplexClass() {
     // given
     JavaType type = TypeFactory.defaultInstance().constructType(Complex.class);
     setValidatorMockResult(true);
@@ -97,7 +96,7 @@ public class VariableDeserializationTypeValidationTest {
   }
 
   @Test
-  public void shouldValidateContentTypeOnlyForArrayClass() {
+  void shouldValidateContentTypeOnlyForArrayClass() {
     // given
     JavaType type = TypeFactory.defaultInstance().constructType(Integer[].class);
     setValidatorMockResult(true);
@@ -111,7 +110,7 @@ public class VariableDeserializationTypeValidationTest {
   }
 
   @Test
-  public void shouldValidateCollectionAndContentTypeForCollectionClass() {
+  void shouldValidateCollectionAndContentTypeForCollectionClass() {
     // given
     JavaType type = TypeFactory.defaultInstance().constructFromCanonical("java.util.ArrayList<java.lang.String>");
     setValidatorMockResult(true);
@@ -126,7 +125,7 @@ public class VariableDeserializationTypeValidationTest {
   }
 
   @Test
-  public void shouldValidateCollectionAndContentTypeForNestedCollectionClass() {
+  void shouldValidateCollectionAndContentTypeForNestedCollectionClass() {
     // given
     JavaType type = TypeFactory.defaultInstance().constructFromCanonical("java.util.ArrayList<java.util.ArrayList<java.lang.String>>");
     setValidatorMockResult(true);
@@ -141,7 +140,7 @@ public class VariableDeserializationTypeValidationTest {
   }
 
   @Test
-  public void shouldValidateMapAndKeyAndContentTypeForMapClass() {
+  void shouldValidateMapAndKeyAndContentTypeForMapClass() {
     // given
     JavaType type = TypeFactory.defaultInstance().constructFromCanonical("java.util.HashMap<java.lang.String, java.lang.Integer>");
     setValidatorMockResult(true);
@@ -157,87 +156,57 @@ public class VariableDeserializationTypeValidationTest {
   }
 
   @Test
-  public void shouldFailForSimpleClass() {
-    // given
+  void shouldFailForSimpleClass() {
     JavaType type = TypeFactory.defaultInstance().constructType(String.class);
     setValidatorMockResult(false);
 
-    // then
-    thrown.expect(IllegalArgumentException.class);
-    thrown.expectMessage("[java.lang.String]");
-
-    // when
-    variablesResourceSpy.validateType(type);
+    Exception e = assertThrows(IllegalArgumentException.class, () -> variablesResourceSpy.validateType(type));
+    assertThat(e.getMessage()).contains("[java.lang.String]");
   }
 
   @Test
-  public void shouldFailForComplexClass() {
-    // given
+  void shouldFailForComplexClass() {
     JavaType type = TypeFactory.defaultInstance().constructType(Complex.class);
     setValidatorMockResult(false);
 
-    // then
-    thrown.expect(IllegalArgumentException.class);
-    thrown.expectMessage("[org.operaton.bpm.engine.rest.sub.impl.VariableDeserializationTypeValidationTest$Complex]");
-
-    // when
-    variablesResourceSpy.validateType(type);
+    Exception e = assertThrows(IllegalArgumentException.class, () -> variablesResourceSpy.validateType(type));
+    assertThat(e.getMessage()).contains("[org.operaton.bpm.engine.rest.sub.impl.VariableDeserializationTypeValidationTest$Complex]");
   }
 
   @Test
-  public void shouldFailForArrayClass() {
-    // given
+  void shouldFailForArrayClass() {
     JavaType type = TypeFactory.defaultInstance().constructType(Integer[].class);
     setValidatorMockResult(false);
 
-    // then
-    thrown.expect(IllegalArgumentException.class);
-    thrown.expectMessage("[java.lang.Integer]");
-
-    // when
-    variablesResourceSpy.validateType(type);
+    Exception e = assertThrows(IllegalArgumentException.class, () -> variablesResourceSpy.validateType(type));
+    assertThat(e.getMessage()).contains("[java.lang.Integer]");
   }
 
   @Test
-  public void shouldFailForCollectionClass() {
-    // given
+  void shouldFailForCollectionClass() {
     JavaType type = TypeFactory.defaultInstance().constructFromCanonical("java.util.ArrayList<java.lang.String>");
     setValidatorMockResult(false);
 
-    // then
-    thrown.expect(IllegalArgumentException.class);
-    thrown.expectMessage("[java.util.ArrayList, java.lang.String]");
-
-    // when
-    variablesResourceSpy.validateType(type);
+    Exception e = assertThrows(IllegalArgumentException.class, () -> variablesResourceSpy.validateType(type));
+    assertThat(e.getMessage()).contains("[java.util.ArrayList, java.lang.String]");
   }
 
   @Test
-  public void shouldFailForMapClass() {
-    // given
+  void shouldFailForMapClass() {
     JavaType type = TypeFactory.defaultInstance().constructFromCanonical("java.util.HashMap<java.lang.String, java.lang.Integer>");
     setValidatorMockResult(false);
 
-    // then
-    thrown.expect(IllegalArgumentException.class);
-    thrown.expectMessage("[java.util.HashMap, java.lang.String, java.lang.Integer]");
-
-    // when
-    variablesResourceSpy.validateType(type);
+    Exception e = assertThrows(IllegalArgumentException.class, () -> variablesResourceSpy.validateType(type));
+    assertThat(e.getMessage()).contains("[java.util.HashMap, java.lang.String, java.lang.Integer]");
   }
 
   @Test
-  public void shouldFailOnceForMapClass() {
-    // given
+  void shouldFailOnceForMapClass() {
     JavaType type = TypeFactory.defaultInstance().constructFromCanonical("java.util.HashMap<java.lang.String, java.lang.String>");
     setValidatorMockResult(false);
 
-    // then
-    thrown.expect(IllegalArgumentException.class);
-    thrown.expectMessage("[java.util.HashMap, java.lang.String]");
-
-    // when
-    variablesResourceSpy.validateType(type);
+    Exception e = assertThrows(IllegalArgumentException.class, () -> variablesResourceSpy.validateType(type));
+    assertThat(e.getMessage()).contains("[java.util.HashMap, java.lang.String]");
   }
 
   public static class Complex {
